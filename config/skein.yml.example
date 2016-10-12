@@ -3,3 +3,9 @@ defaults: &defaults
   port: 5762
   username: guest
   password: guest
+
+development:
+  <<: *defaults
+
+test:
+  <<: *defaults

@@ -1,2 +1,48 @@
 #!/usr/bin/env ruby
 
+# == Imports ================================================================
+
+require 'optparse'
+
+require_relative '../lib/skein'
+
+# == Main ===================================================================
+
+options = {
+}
+
+parser = OptionParser.new do |parser|
+  parser.on('-v', '--verbose') do
+    options[:verbose] = true
+  end
+
+  parser.on('-h', '--help') do
+    puts parser
+    exit(0)
+  end
+end
+
+args = parser.parse(*ARGV)
+
+case (args[0])
+when 'config'
+  Skein::Support.hash_format(Skein.config).each do |line|
+    puts line
+  end
+when 'test'
+  begin
+    Skein::RabbitMQ.connect
+
+    puts '[OK] Connection succeeded.'
+
+    exit(0)
+  rescue => e
+    $stderr.puts('[%s] %s' % [ e.class, e ])
+
+    if (options[:verbose])
+      $stderr.puts(e.backtrace)
+    end
+
+    exit(-1)
+  end
+end
