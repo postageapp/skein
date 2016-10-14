@@ -12,6 +12,24 @@ class Skein::Broker
     @reporter = reporter
   end
 
+  def listen(channel, queue)
+    queue.subscribe(manual_ack: true, header: true, block: true) do |delivery_info, properties, payload|
+      puts delivery_info.inspect
+      puts payload.inspect
+
+      reply = handle(payload)
+
+      puts reply.inspect
+
+      channel.acknowledge(delivery_info.delivery_tag, true)
+
+      channel.default_exchange.publish(
+        reply,
+        routing_key: properties[:reply_to]
+      )
+    end
+  end
+
   def handle(message_json)
     request = JSON.load(message_json)
 

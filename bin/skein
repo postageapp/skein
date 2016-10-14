@@ -6,6 +6,31 @@ require 'optparse'
 
 require_relative '../lib/skein'
 
+# == Support Classes ========================================================
+
+class EchoReceiver < Skein::Receiver
+  def echo(*args)
+    args
+  end
+end
+
+# == Support Methods ========================================================
+
+def rescue_safely(options)
+  Fiber.new do
+    yield
+  end.transfer
+
+rescue Object => e
+  $stderr.puts('[%s] %s' % [ e.class, e ])
+
+  if (options[:verbose])
+    $stderr.puts(e.backtrace)
+  end
+
+  exit(-1)
+end
+
 # == Main ===================================================================
 
 options = {
@@ -24,25 +49,43 @@ end
 
 args = parser.parse(*ARGV)
 
-case (args[0])
+case (args.shift)
 when 'config'
   Skein::Support.hash_format(Skein.config).each do |line|
     puts line
   end
 when 'test'
-  begin
+  rescue_safely(options) do
     Skein::RabbitMQ.connect
 
     puts '[OK] Connection succeeded.'
+  end
+when 'echo'
+  rescue_safely(options) do
+    conn = Skein::RabbitMQ.connect
+    ch = conn.create_channel
 
-    exit(0)
-  rescue => e
-    $stderr.puts('[%s] %s' % [ e.class, e ])
+    broker = Skein::Broker.new(EchoReceiver.new)
 
-    if (options[:verbose])
-      $stderr.puts(e.backtrace)
-    end
+    queue = ch.queue('test_echo')
 
-    exit(-1)
+    client = Skein::Client.new(nil, queue)
+
+    test_data = SecureRandom.uuid
+
+    response = client.echo(test_data)
+
+    puts response
+  end
+when 'echo_server'
+  rescue_safely(options) do
+    conn = Skein::RabbitMQ.connect
+    ch = conn.create_channel
+
+    broker = Skein::Broker.new(EchoReceiver.new)
+
+    queue = ch.queue('test_echo')
+
+    broker.listen(ch, queue)
   end
 end

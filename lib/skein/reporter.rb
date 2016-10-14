@@ -4,4 +4,8 @@ class Skein::Reporter
   def initialize
     @logger = Birling.new
   end
+
+  def exception!(e, *meta)
+    # ...
+  end
 end

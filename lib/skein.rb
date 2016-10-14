@@ -1,3 +1,5 @@
+require 'json'
+
 module Skein
   VERSION = File.read(File.expand_path('../VERSION', File.dirname(__FILE__))).chomp.freeze
 
@@ -11,6 +13,7 @@ module Skein
 end
 
 require_relative './skein/broker'
+require_relative './skein/client'
 require_relative './skein/config'
 require_relative './skein/context'
 require_relative './skein/rabbitmq'
