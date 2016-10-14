@@ -9,17 +9,15 @@ require_relative '../lib/skein'
 # == Support Classes ========================================================
 
 class EchoReceiver < Skein::Receiver
-  def echo(*args)
-    args
+  def echo(text)
+    text
   end
 end
 
 # == Support Methods ========================================================
 
 def rescue_safely(options)
-  Fiber.new do
-    yield
-  end.transfer
+  yield
 
 rescue Object => e
   $stderr.puts('[%s] %s' % [ e.class, e ])
@@ -75,7 +73,7 @@ when 'echo'
 
     response = client.echo(test_data)
 
-    puts response
+    puts '[%s] %s' % [ (response == test_data ? 'OK' : 'ERR'), response ]
   end
 when 'echo_server'
   rescue_safely(options) do

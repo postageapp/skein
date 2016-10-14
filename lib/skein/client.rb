@@ -17,6 +17,22 @@ class Skein::Client
     @rpc_queue = rpc_queue
 
     @response_queue = @channel.queue(@ident, durable: true, auto_delete: true)
+
+    @threads = { }
+
+    @response_queue.subscribe do |delivery_info, properties, payload|
+      begin
+        response = JSON.load(payload)
+
+        if (thread = @threads.delete(response['id']))
+          thread[:result] = response['result']
+
+          thread.wakeup
+        end
+      rescue => e
+        puts e.inspect
+      end
+    end
   end
 
   def method_missing(name, *args)
@@ -34,14 +50,10 @@ class Skein::Client
       message_id: message_id
     )
 
+    @threads[message_id] = Thread.current
 
-    consumer = @response_queue.subscribe(block: true) do |delivery_info, properties, payload|
-      puts [ delivery_info, properties, payload ].inspect
-      response = JSON.load(payload)
+    Thread.stop
 
-      # consumer.cancel
-
-      response['result']
-    end
+    Thread.current[:result]
   end
 end
