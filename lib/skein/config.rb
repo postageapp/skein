@@ -4,7 +4,9 @@ require 'yaml'
 class Skein::Config < OpenStruct
   # == Constants ============================================================
 
-  RAILS_ENV_DEFAULT = 'development'.freeze
+  CONFIG_PATH_DEFAULT = 'config/skein.yml'.freeze
+
+  ENV_DEFAULT = 'development'.freeze
 
   DRIVERS = {
     bunny: 'Bunny',
@@ -22,22 +24,39 @@ class Skein::Config < OpenStruct
     port: 5672,
     username: 'guest',
     password: 'guest',
-    driver: DRIVER_DEFAULT
+    driver: DRIVER_DEFAULT,
+    namespace: nil
   }.freeze
+
+  # == Class Methods ========================================================
+
+  def self.root
+    if (defined?(Rails))
+      Rails.root
+    else
+      Dir.pwd
+    end
+  end
+
+  def self.env
+    if (defined?(Rails))
+      Rails.env.to_s
+    else
+      ENV['RAILS_ENV'] || ENV_DEFAULT
+    end
+  end
+
+  def self.path
+    File.expand_path(CONFIG_PATH_DEFAULT, self.root)
+  end
+
+  def self.exist?
+    File.exist?(self.path)
+  end
 
   # == Instance Methods =====================================================
 
   def initialize(options = nil)
-    path_prefix = Dir.pwd
-    env = ENV['RAILS_ENV'] || RAILS_ENV_DEFAULT
-
-    if (defined?(Rails))
-      path_prefix = Rails.root
-      env = Rails.env
-    end
-
-    config_path = File.expand_path('config/skein.yml', path_prefix)
-
     case (options)
     when String
       if (File.exist?(options))
@@ -47,10 +66,14 @@ class Skein::Config < OpenStruct
       super(options)
 
       return
+    when false, :default
+      # Ignore configuration file, use defaults
+    else
+      config_path = File.expand_path('config/skein.yml', self.class.root)
     end
 
-    if (File.exists?(config_path))
-      super(DEFAULTS.merge(YAML.load_file(config_path)[env] || { }))
+    if (config_path and File.exist?(config_path))
+      super(DEFAULTS.merge(YAML.load_file(config_path)[self.class.env] || { }))
     else
       super(DEFAULTS)
     end

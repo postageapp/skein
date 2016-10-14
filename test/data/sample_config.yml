@@ -1,0 +1,13 @@
+development:
+  host: dev.host
+  port: 25672
+  username: dev_user
+  password: dev_password
+  namespace: example
+
+test:
+  host: test.host
+  port: 5670
+  username: test_user
+  password: test_password
+  namespace: test

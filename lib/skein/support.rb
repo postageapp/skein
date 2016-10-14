@@ -1,5 +1,19 @@
+require 'socket'
+
 module Skein::Support
   # == Module Methods =======================================================
+
+  def self.hostname
+    Socket.gethostname
+  end
+
+  def self.process_name
+    $0.split(/\s/).first.split('/').last.sub(/\.rb\z/, '')
+  end
+
+  def self.process_id
+    Process.pid
+  end
 
   def self.hash_format(hash, width: nil)
     hash = hash.to_h

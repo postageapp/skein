@@ -15,11 +15,11 @@ module Skein::RabbitMQ
         require 'bunny'
       end
 
-      rmq = Bunny.new(config.to_h)
+      bunny = Bunny.new(config.to_h)
 
-      rmq.start
+      bunny.start
 
-      rmq
+      bunny
     when 'march_hare', 'marchhare'
       unless (defined?(MarchHare))
         require 'march_hare'
