@@ -30,6 +30,7 @@ class Skein::Client
           thread.wakeup
         end
       rescue => e
+        # FIX: Error handling
         puts e.inspect
       end
     end

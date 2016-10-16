@@ -14,12 +14,7 @@ class Skein::Broker
 
   def listen(channel, queue)
     queue.subscribe(manual_ack: true, header: true, block: true) do |delivery_info, properties, payload|
-      puts delivery_info.inspect
-      puts payload.inspect
-
-      reply = handle(payload)
-
-      puts reply.inspect
+     reply = handle(payload)
 
       channel.acknowledge(delivery_info.delivery_tag, true)
 

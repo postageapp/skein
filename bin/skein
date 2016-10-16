@@ -32,11 +32,20 @@ end
 # == Main ===================================================================
 
 options = {
+  count: 1,
+  threads: 1
 }
 
 parser = OptionParser.new do |parser|
   parser.on('-v', '--verbose') do
     options[:verbose] = true
+  end
+
+  parser.on('-n', '--count=n') do |n|
+    options[:count] = n.to_i
+  end
+  parser.on('-c', '--threads=n') do |n|
+    options[:threads] = n.to_i
   end
 
   parser.on('-h', '--help') do
@@ -63,27 +72,50 @@ when 'echo'
     conn = Skein::RabbitMQ.connect
     ch = conn.create_channel
 
-    broker = Skein::Broker.new(EchoReceiver.new)
-
     queue = ch.queue('test_echo')
 
     client = Skein::Client.new(nil, queue)
+    count = Hash.new(0)
 
-    test_data = SecureRandom.uuid
+    start = Time.now
 
-    response = client.echo(test_data)
+    options[:threads].times.map do
+      Thread.new do
+        Thread.abort_on_exception = true
 
-    puts '[%s] %s' % [ (response == test_data ? 'OK' : 'ERR'), response ]
+        options[:count].times do
+          test_data = SecureRandom.uuid
+
+          response = client.echo(test_data)
+
+          count[response == test_data] += 1
+
+          if (options[:verbose])
+            puts '[%s] %s' % [ (response == test_data ? 'OK' : 'ERR'), response ]
+          end
+        end
+      end
+    end.each(&:join)
+
+    elapsed = Time.now - start
+
+    puts 'Success: %d Failed: %d in %.1fms [%d mps]' % [
+      count[true],
+      count[false],
+      elapsed.to_f * 1000,
+      count[true] > 0 ? (count[true].to_f / elapsed.to_f) : 0
+    ]
   end
 when 'echo_server'
   rescue_safely(options) do
     conn = Skein::RabbitMQ.connect
     ch = conn.create_channel
 
-    broker = Skein::Broker.new(EchoReceiver.new)
-
     queue = ch.queue('test_echo')
 
-    broker.listen(ch, queue)
+    options[:threads].times.map do
+      broker = Skein::Broker.new(EchoReceiver.new)
+      broker.listen(ch, queue)
+    end.each(&:join)
   end
 end
