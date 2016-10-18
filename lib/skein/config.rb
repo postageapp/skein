@@ -13,11 +13,15 @@ class Skein::Config < OpenStruct
     march_hare: 'MarchHare'
   }.freeze
 
+  DRIVER_PLATFORM_DEFAULT = Hash.new(:bunny).merge(
+    "java" => :march_hare
+  ).freeze
+
   DRIVER_DEFAULT = (
     DRIVERS.find do |name, const|
       const_defined?(const)
     end || [ ]
-  )[0] || :bunny
+  )[0] || DRIVER_PLATFORM_DEFAULT[RUBY_PLATFORM]
 
   DEFAULTS = {
     host: '127.0.0.1',
