@@ -3,13 +3,22 @@
 # == Imports ================================================================
 
 require 'optparse'
+require 'thread'
 
 require_relative '../lib/skein'
 
 # == Support Classes ========================================================
 
 class EchoReceiver < Skein::Receiver
+  def initialize(options)
+    @debug = options[:debug]
+  end
+
   def echo(text)
+    if (@debug)
+      puts text
+    end
+
     text
   end
 end
@@ -22,11 +31,23 @@ def rescue_safely(options)
 rescue Object => e
   $stderr.puts('[%s] %s' % [ e.class, e ])
 
-  if (options[:verbose])
+  if (options[:trace])
     $stderr.puts(e.backtrace)
   end
 
   exit(-1)
+end
+
+def in_thread(options)
+  Thread.new do
+    begin
+      Thread.abort_on_exception = true
+
+      rescue_safely(options) do
+        yield
+      end
+    end
+  end
 end
 
 # == Main ===================================================================
@@ -46,6 +67,12 @@ parser = OptionParser.new do |parser|
   end
   parser.on('-c', '--threads=n') do |n|
     options[:threads] = n.to_i
+  end
+  parser.on('-t', '--trace') do
+    options[:trace] = true
+  end
+  parser.on('-d', '--debug') do
+    options[:debug] = true
   end
 
   parser.on('-h', '--help') do
@@ -70,32 +97,55 @@ when 'test'
 when 'echo'
   rescue_safely(options) do
     conn = Skein::RabbitMQ.connect
-    ch = conn.create_channel
-
-    queue = ch.queue('test_echo')
-
-    client = Skein::Client.new(nil, queue)
-    count = Hash.new(0)
+    results = Queue.new
 
     start = Time.now
 
-    options[:threads].times.map do
-      Thread.new do
-        Thread.abort_on_exception = true
+    count = Hash.new(0)
 
-        options[:count].times do
+    tabulator = Thread.new do
+      loop do
+        v = results.pop
+
+        break if (v.nil?)
+
+        count[v] += 1
+      end
+    end
+
+    options[:threads].times.map do
+      in_thread(options) do
+        ch = conn.create_channel
+
+        queue = ch.queue('test_echo')
+
+        client = Skein::Client.new(nil, queue)
+
+        options[:count].times do |i|
           test_data = SecureRandom.uuid
 
           response = client.echo(test_data)
 
-          count[response == test_data] += 1
+          results << (response == test_data)
 
           if (options[:verbose])
-            puts '[%s] %s' % [ (response == test_data ? 'OK' : 'ERR'), response ]
+            puts '[%s] %s (%d/%d)' % [
+              (response == test_data ? 'OK' : 'ERR'),
+              response,
+              i + 1,
+              options[:count]
+            ]
           end
         end
+
+        client.cancel!
+
+        ch.close
       end
     end.each(&:join)
+
+    results << nil
+    tabulator.join
 
     elapsed = Time.now - start
 
@@ -105,6 +155,8 @@ when 'echo'
       elapsed.to_f * 1000,
       count[true] > 0 ? (count[true].to_f / elapsed.to_f) : 0
     ]
+
+    conn.close
   end
 when 'echo_server'
   rescue_safely(options) do
@@ -114,8 +166,10 @@ when 'echo_server'
     queue = ch.queue('test_echo')
 
     options[:threads].times.map do
-      broker = Skein::Broker.new(EchoReceiver.new)
-      broker.listen(ch, queue)
+      in_thread(options) do
+        broker = Skein::Broker.new(EchoReceiver.new(options))
+        broker.listen(ch, queue)
+      end
     end.each(&:join)
   end
 end

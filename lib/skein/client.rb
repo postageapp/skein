@@ -16,16 +16,27 @@ class Skein::Client
     @channel = rpc_queue.channel
     @rpc_queue = rpc_queue
 
-    @response_queue = @channel.queue(@ident, durable: true, auto_delete: true)
+    @response_queue = @channel.queue(@ident, durable: true, header: true, auto_delete: true)
 
     @threads = { }
 
-    @response_queue.subscribe do |delivery_info, properties, payload|
+    @consumer = @response_queue.subscribe do |metadata, payload, extra|
+      # puts [metadata,payload,extra].inspect
+
+      # puts [metadata,payload,extra].map(&:class).inspect
+
+      if (extra)
+        payload = extra
+      elsif (!payload)
+        payload = metadata
+      end
+
       begin
         response = JSON.load(payload)
 
         if (thread = @threads.delete(response['id']))
-          thread[:result] = response['result']
+          # REFACTOR: Switch to Queue?
+          thread[:skein_result] = response['result']
 
           thread.wakeup
         end
@@ -34,6 +45,12 @@ class Skein::Client
         puts e.inspect
       end
     end
+  end
+
+  def cancel!
+    @consumer and @consumer.cancel
+
+    @consumer = nil
   end
 
   def method_missing(name, *args)
@@ -55,6 +72,6 @@ class Skein::Client
 
     Thread.stop
 
-    Thread.current[:result]
+    Thread.current[:skein_result]
   end
 end

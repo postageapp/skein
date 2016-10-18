@@ -7,5 +7,8 @@ class TestSkeinRabbitMQ < Test::Unit::TestCase
     assert rmq
 
     assert rmq.respond_to?(:create_channel)
+
+  ensure
+    rmq and rmq.close
   end
 end
