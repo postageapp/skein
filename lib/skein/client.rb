@@ -34,11 +34,8 @@ class Skein::Client
       begin
         response = JSON.load(payload)
 
-        if (thread = @threads.delete(response['id']))
-          # REFACTOR: Switch to Queue?
-          thread[:skein_result] = response['result']
-
-          thread.wakeup
+        if (queue = @threads.delete(response['id']))
+          queue << response['result']
         end
       rescue => e
         # FIX: Error handling
@@ -68,10 +65,10 @@ class Skein::Client
       message_id: message_id
     )
 
-    @threads[message_id] = Thread.current
+    queue = Queue.new
 
-    Thread.stop
+    @threads[message_id] = queue
 
-    Thread.current[:skein_result]
+    queue.pop
   end
 end
