@@ -14,6 +14,9 @@ class Skein::Broker
 
   def listen(channel, queue)
     queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
+      # FIX: Clean up friction here between Bunny and March Hare
+      # puts [metadata,payload,extra].map(&:class).inspect
+
       reply_to = nil
       headers = nil
 
