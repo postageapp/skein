@@ -15,6 +15,17 @@ module Skein::Support
     Process.pid
   end
 
+  def self.arrayify(value)
+    case (value)
+    when nil
+      nil
+    when Array
+      value
+    else
+      [ value ]
+    end
+  end
+
   def self.hash_format(hash, width: nil)
     hash = hash.to_h
 

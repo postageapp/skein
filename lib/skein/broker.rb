@@ -14,8 +14,6 @@ class Skein::Broker
 
   def listen(channel, queue)
     queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
-      puts [metadata,payload,extra].map(&:class).inspect
-
       reply_to = nil
       headers = nil
 
@@ -42,6 +40,7 @@ class Skein::Broker
   end
 
   def handle(message_json)
+    # REFACTOR: Use Skein::RPC::Request
     request =
       begin
         JSON.load(message_json)
@@ -85,24 +84,20 @@ class Skein::Broker
       )
     end
 
-    if (block_given?)
-      # ...
-    else
-      begin
-        JSON.dump(
-          result: @receiver.send(request['method'], *request['params']),
-          error: nil,
-          id: request['id']
-        )
-      rescue Object => e
-        @reporter and @reporter.exception!(e, message_json)
+    begin
+      JSON.dump(
+        result: @receiver.send(request['method'], *request['params']),
+        error: nil,
+        id: request['id']
+      )
+    rescue Object => e
+      @reporter and @reporter.exception!(e, message_json)
 
-        JSON.dump(
-          result: nil,
-          error: '[%s] %s' % [ e.class, e ],
-          id: request['id']
-        )
-      end
+      JSON.dump(
+        result: nil,
+        error: '[%s] %s' % [ e.class, e ],
+        id: request['id']
+      )
     end
   end
 end

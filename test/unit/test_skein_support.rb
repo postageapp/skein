@@ -78,4 +78,18 @@ class TestSkeinSupport < Test::Unit::TestCase
     assert(process_id)
     assert(process_id.is_a?(Integer))
   end
+
+  def test_arrayify
+    assert_mapping(
+      [ :test ] => [ :test ],
+      :test => [ :test ],
+      true => [ true ],
+      0 => [ 0 ],
+      [ 0 ] => [ 0 ],
+      [ nil ] => [ nil ],
+      nil => nil
+    ) do |value|
+      Skein::Support.arrayify(value)
+    end
+  end
 end
