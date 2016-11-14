@@ -94,6 +94,24 @@ when 'test'
 
     puts '[OK] Connection succeeded.'
   end
+when 'publish'
+  rescue_safely(options) do
+    publisher = Skein::Publisher.new('test_pubsub')
+
+    loop do
+      publisher << { test: Time.now.to_f }
+
+      sleep(1)
+    end
+  end
+when 'subscribe'
+  rescue_safely(options) do
+    subscriber = Skein::Subscriber.new('test_pubsub')
+
+    subscriber.listen do |*result|
+      puts result.inspect
+    end
+  end
 when 'echo'
   rescue_safely(options) do
     results = Queue.new
