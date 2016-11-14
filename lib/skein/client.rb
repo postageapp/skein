@@ -1,21 +1,16 @@
 require 'securerandom'
 require 'fiber'
 
-class Skein::Client
+class Skein::Client < Skein::Connected
   # == Properties ===========================================================
-
-  attr_reader :context
-  attr_reader :ident
 
   # == Instance Methods =====================================================
 
   def initialize(queue_name)
-    @context = Skein::Context.new
-    @ident = @context.ident(self)
+    super()
 
-    @channel = @context.channel
-    @rpc_queue = @channel.queue(queue_name, durable: true)
-    @response_queue = @channel.queue(@ident, durable: true, header: true, auto_delete: true)
+    @rpc_queue = self.channel.queue(queue_name, durable: true)
+    @response_queue = self.channel.queue(@ident, durable: true, header: true, auto_delete: true)
 
     @threads = { }
 
@@ -48,8 +43,7 @@ class Skein::Client
     @consumer and @consumer.cancel
     @consumer = nil
 
-    @context.connection.close
-    @context = nil
+    self.close
   end
 
   def method_missing(name, *args)

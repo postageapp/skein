@@ -1,6 +1,6 @@
 require 'json'
 
-class Skein::Broker
+class Skein::Broker < Skein::Connected
   # == Properties ===========================================================
 
   attr_reader :receiver
@@ -8,14 +8,13 @@ class Skein::Broker
   # == Instance Methods =====================================================
 
   def initialize(reporter = nil)
-    @reporter = reporter
+    super()
 
-    @context = Skein::Context.new
+    @reporter = reporter
   end
 
   def listen(queue_name, receiver)
-    channel = @context.channel
-    queue = channel.queue(queue_name, durable: true)
+    queue = self.channel.queue(queue_name, durable: true)
 
     queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
       # FIX: Clean up friction here between Bunny and March Hare

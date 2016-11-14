@@ -12,6 +12,8 @@ module Skein
   end
 end
 
+require_relative './skein/connected'
+
 require_relative './skein/broker'
 require_relative './skein/client'
 require_relative './skein/config'

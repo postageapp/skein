@@ -1,11 +1,10 @@
-class Skein::Publisher
+class Skein::Publisher < Skein::Connected
   # == Instance Methods =====================================================
 
   def initialize(queue_name)
-    @context = Skein::Context.new
-    @channel = @context.channel
+    super()
 
-    @queue = @channel.fanout(queue_name)
+    @queue = self.channel.fanout(queue_name)
   end
 
   def publish!(message)
