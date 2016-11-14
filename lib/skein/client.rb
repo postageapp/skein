@@ -9,18 +9,18 @@ class Skein::Client
 
   # == Instance Methods =====================================================
 
-  def initialize(context, rpc_queue)
-    @context = context || Skein::Context.default
+  def initialize(queue_name)
+    @context = Skein::Context.new
     @ident = @context.ident(self)
 
-    @channel = rpc_queue.channel
-    @rpc_queue = rpc_queue
-
+    @channel = @context.channel
+    @rpc_queue = @channel.queue(queue_name, durable: true)
     @response_queue = @channel.queue(@ident, durable: true, header: true, auto_delete: true)
 
     @threads = { }
 
     @consumer = @response_queue.subscribe do |metadata, payload, extra|
+      # FIX: Deal with mixup between Bunny and MarchHare
       # puts [metadata,payload,extra].inspect
 
       # puts [metadata,payload,extra].map(&:class).inspect
@@ -46,8 +46,10 @@ class Skein::Client
 
   def cancel!
     @consumer and @consumer.cancel
-
     @consumer = nil
+
+    @context.connection.close
+    @context = nil
   end
 
   def method_missing(name, *args)

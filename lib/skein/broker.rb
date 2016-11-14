@@ -7,12 +7,16 @@ class Skein::Broker
 
   # == Instance Methods =====================================================
 
-  def initialize(receiver, reporter = nil)
-    @receiver = receiver
+  def initialize(reporter = nil)
     @reporter = reporter
+
+    @context = Skein::Context.new
   end
 
-  def listen(channel, queue)
+  def listen(queue_name, receiver)
+    channel = @context.channel
+    queue = channel.queue(queue_name, durable: true)
+
     queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
       # FIX: Clean up friction here between Bunny and March Hare
       # puts [metadata,payload,extra].map(&:class).inspect
@@ -31,7 +35,7 @@ class Skein::Broker
         reply_to = metadata.reply_to
       end
 
-      reply = handle(payload)
+      reply = handle(payload, receiver)
 
       channel.acknowledge(metadata.delivery_tag, true)
 
@@ -42,7 +46,7 @@ class Skein::Broker
     end
   end
 
-  def handle(message_json)
+  def handle(message_json, receiver)
     # REFACTOR: Use Skein::RPC::Request
     request =
       begin
@@ -89,7 +93,7 @@ class Skein::Broker
 
     begin
       JSON.dump(
-        result: @receiver.send(request['method'], *request['params']),
+        result: receiver.send(request['method'], *request['params']),
         error: nil,
         id: request['id']
       )

@@ -12,10 +12,7 @@ class TestSkeinBroker < Test::Unit::TestCase
 
   def test_example
     receiver = Skein::Receiver.new
-
-    broker = Skein::Broker.new(receiver)
-
-    assert_equal(receiver, broker.receiver)
+    broker = Skein::Broker.new
 
     message = {
       method: 'ident',
@@ -23,7 +20,7 @@ class TestSkeinBroker < Test::Unit::TestCase
       id: '43d8352c-4907-4c32-9c81-fc34e91a3884'
     }
 
-    response = JSON.load(broker.handle(JSON.dump(message)))
+    response = JSON.load(broker.handle(JSON.dump(message), receiver))
 
     expected = {
       'result' => receiver.ident,
@@ -35,14 +32,14 @@ class TestSkeinBroker < Test::Unit::TestCase
   end
 
   def test_throws_exception
-    broker = Skein::Broker.new(ErrorGenerator.new)
+    broker = Skein::Broker.new
 
     message = {
       method: 'raises_error',
       id: '29fe8a40-fccf-43c6-ba48-818598c66e6f'
     }
 
-    response = JSON.load(broker.handle(JSON.dump(message)))
+    response = JSON.load(broker.handle(JSON.dump(message), ErrorGenerator.new))
 
     expected = {
       'result' => nil,

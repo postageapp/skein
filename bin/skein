@@ -83,7 +83,7 @@ end
 
 args = parser.parse(*ARGV)
 
-case (args.shift)
+case (command = args.shift)
 when 'config'
   Skein::Support.hash_format(Skein.config).each do |line|
     puts line
@@ -96,7 +96,6 @@ when 'test'
   end
 when 'echo'
   rescue_safely(options) do
-    conn = Skein::RabbitMQ.connect
     results = Queue.new
 
     start = Time.now
@@ -115,11 +114,7 @@ when 'echo'
 
     options[:threads].times.map do
       in_thread(options) do
-        ch = conn.create_channel
-
-        queue = ch.queue('test_echo')
-
-        client = Skein::Client.new(nil, queue)
+        client = Skein::Client.new('test_echo')
 
         options[:count].times do |i|
           test_data = SecureRandom.uuid
@@ -139,8 +134,6 @@ when 'echo'
         end
 
         client.cancel!
-
-        ch.close
       end
     end.each(&:join)
 
@@ -155,21 +148,18 @@ when 'echo'
       elapsed.to_f * 1000,
       count[true] > 0 ? (count[true].to_f / elapsed.to_f) : 0
     ]
-
-    conn.close
   end
 when 'echo_server'
   rescue_safely(options) do
-    conn = Skein::RabbitMQ.connect
-    ch = conn.create_channel
-
-    queue = ch.queue('test_echo')
-
     options[:threads].times.map do
       in_thread(options) do
-        broker = Skein::Broker.new(EchoReceiver.new(options))
-        broker.listen(ch, queue)
+        broker = Skein::Broker.new
+
+        broker.listen('test_echo', EchoReceiver.new(options))
       end
     end.each(&:join)
   end
+else
+  $stderr.puts('Unknown command: %s' % command)
+  exit(-1)
 end

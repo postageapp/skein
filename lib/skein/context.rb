@@ -4,6 +4,8 @@ class Skein::Context
   attr_reader :hostname
   attr_reader :process_name
   attr_reader :process_id
+  attr_reader :connection
+  attr_reader :channel
 
   # == Class Methods ========================================================
 
@@ -13,10 +15,13 @@ class Skein::Context
 
   # == Instance Methods =====================================================
 
-  def initialize(hostname: nil, process_name: nil, process_id: nil)
+  def initialize(hostname: nil, process_name: nil, process_id: nil, config: nil)
     @hostname = (hostname || Skein::Support.hostname).dup.freeze
     @process_name = (process_name || Skein::Support.process_name).dup.freeze
     @process_id = process_id || Skein::Support.process_id
+
+    @connection = Skein::RabbitMQ.connect(config)
+    @channel = @connection.create_channel
   end
 
   def ident(object)
