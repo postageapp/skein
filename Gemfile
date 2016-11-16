@@ -4,5 +4,6 @@ gem 'birling'
 
 group :development, :test do
   gem 'rake'
+  gem 'jeweler'
   gem 'test-unit'
 end
