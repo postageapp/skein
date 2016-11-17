@@ -1,19 +1,13 @@
 require 'json'
 
-class Skein::Broker < Skein::Connected
+class Skein::Client::Worker < Skein::Connected
   # == Properties ===========================================================
-
-  attr_reader :receiver
 
   # == Instance Methods =====================================================
 
-  def initialize(reporter = nil)
-    super()
+  def initialize(queue_name, connection: nil, context: nil)
+    super(connection: connection, context: context)
 
-    @reporter = reporter
-  end
-
-  def listen(queue_name, receiver)
     queue = self.channel.queue(queue_name, durable: true)
 
     queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
@@ -34,25 +28,29 @@ class Skein::Broker < Skein::Connected
         reply_to = metadata.reply_to
       end
 
-      reply = handle(payload, receiver)
+      reply = handle(payload)
 
       channel.acknowledge(metadata.delivery_tag, true)
 
-      channel.default_exchange.publish(
-        reply,
-        routing_key: reply_to
-      )
+      if (reply_to)
+        channel.default_exchange.publish(
+          reply,
+          routing_key: reply_to
+        )
+      end
     end
   end
 
-  def handle(message_json, receiver)
+protected
+  def handle(message_json)
+    # REFACTOR: Roll this into a module to keep it more contained.
     # REFACTOR: Use Skein::RPC::Request
     request =
       begin
         JSON.load(message_json)
 
       rescue Object => e
-        @reporter and @reporter.exception!(e, message_json)
+        @context.exception!(e, message_json)
 
         return JSON.dump(
           result: nil,
@@ -92,7 +90,7 @@ class Skein::Broker < Skein::Connected
 
     begin
       JSON.dump(
-        result: receiver.send(request['method'], *request['params']),
+        result: send(request['method'], *request['params']),
         error: nil,
         id: request['id']
       )

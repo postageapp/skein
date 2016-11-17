@@ -1,8 +1,8 @@
 class Skein::Publisher < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name)
-    super()
+  def initialize(queue_name, connection: nil, context: nil)
+    super(connection: connection, context: context)
 
     @queue = self.channel.fanout(queue_name)
   end

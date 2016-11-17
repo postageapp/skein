@@ -8,19 +8,23 @@ class Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize
-    @context = Skein::Context.new
-    @ident = @context.ident(self)
+  def initialize(connection: nil, context: nil)
+    @shared_connection = connection
 
-    @connection = Skein::RabbitMQ.connect
+    @connection = connection || Skein::RabbitMQ.connect
     @channel = @connection.channel
+
+    @context = context || Skein::Context.new
+    @ident = @context.ident(self)
   end
 
   def close
     @channel.close
     @channel = nil
 
-    @connection.close
-    @connection = nil
+    unless (@shared_connection)
+      @connection.close
+      @connection = nil
+    end
   end
 end

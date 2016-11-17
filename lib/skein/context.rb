@@ -4,6 +4,7 @@ class Skein::Context
   attr_reader :hostname
   attr_reader :process_name
   attr_reader :process_id
+  attr_accessor :reporter
 
   # == Class Methods ========================================================
 
@@ -29,5 +30,9 @@ class Skein::Context
       object.object_id,
       @hostname
     ]
+  end
+
+  def exception!(*args)
+    @reporter and @reporter.exception!(*args)
   end
 end

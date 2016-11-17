@@ -14,14 +14,10 @@ end
 
 require_relative './skein/connected'
 
-require_relative './skein/broker'
 require_relative './skein/client'
 require_relative './skein/config'
 require_relative './skein/context'
-require_relative './skein/publisher'
 require_relative './skein/rabbitmq'
-require_relative './skein/receiver'
 require_relative './skein/reporter'
 require_relative './skein/rpc'
-require_relative './skein/subscriber'
 require_relative './skein/support'

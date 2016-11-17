@@ -1,7 +1,7 @@
 require_relative '../helper'
 
-class TestSkeinBroker < Test::Unit::TestCase
-  class ErrorGenerator < Skein::Receiver
+class TestSkeinClientWorker < Test::Unit::TestCase
+  class ErrorGenerator < Skein::Client::Worker
     class CustomError < RuntimeError
     end
 
@@ -11,8 +11,7 @@ class TestSkeinBroker < Test::Unit::TestCase
   end
 
   def test_example
-    receiver = Skein::Receiver.new
-    broker = Skein::Broker.new
+    worker = Skein::Client::Worker.new
 
     message = {
       method: 'ident',
@@ -20,7 +19,7 @@ class TestSkeinBroker < Test::Unit::TestCase
       id: '43d8352c-4907-4c32-9c81-fc34e91a3884'
     }
 
-    response = JSON.load(broker.handle(JSON.dump(message), receiver))
+    response = JSON.load(worker.handle(JSON.dump(message)))
 
     expected = {
       'result' => receiver.ident,
@@ -32,14 +31,14 @@ class TestSkeinBroker < Test::Unit::TestCase
   end
 
   def test_throws_exception
-    broker = Skein::Broker.new
+    worker = ErrorGenerator.new
 
     message = {
       method: 'raises_error',
       id: '29fe8a40-fccf-43c6-ba48-818598c66e6f'
     }
 
-    response = JSON.load(broker.handle(JSON.dump(message), ErrorGenerator.new))
+    response = JSON.load(worker.handle(JSON.dump(message)))
 
     expected = {
       'result' => nil,

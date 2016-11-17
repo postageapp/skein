@@ -1,8 +1,8 @@
 class Skein::Subscriber < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name)
-    super()
+  def initialize(queue_name, connection: nil, context: nil)
+    super(connection: connection, context: context)
 
     @queue = self.channel.fanout(queue_name)
     @subscribe_queue = self.channel.queue('', exclusive: true)
