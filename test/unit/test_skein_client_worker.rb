@@ -11,7 +11,7 @@ class TestSkeinClientWorker < Test::Unit::TestCase
   end
 
   def test_example
-    worker = Skein::Client::Worker.new
+    worker = Skein::Client::Worker.new('test_rpc')
 
     message = {
       method: 'ident',
@@ -19,10 +19,10 @@ class TestSkeinClientWorker < Test::Unit::TestCase
       id: '43d8352c-4907-4c32-9c81-fc34e91a3884'
     }
 
-    response = JSON.load(worker.handle(JSON.dump(message)))
+    response = JSON.load(worker.send(:handle, JSON.dump(message)))
 
     expected = {
-      'result' => receiver.ident,
+      'result' => worker.ident,
       'error' => nil,
       'id' => message[:id]
     }
@@ -31,18 +31,18 @@ class TestSkeinClientWorker < Test::Unit::TestCase
   end
 
   def test_throws_exception
-    worker = ErrorGenerator.new
+    worker = ErrorGenerator.new('test_error')
 
     message = {
       method: 'raises_error',
       id: '29fe8a40-fccf-43c6-ba48-818598c66e6f'
     }
 
-    response = JSON.load(worker.handle(JSON.dump(message)))
+    response = JSON.load(worker.send(:handle, JSON.dump(message)))
 
     expected = {
       'result' => nil,
-      'error' => '[TestSkeinBroker::ErrorGenerator::CustomError] Example error!',
+      'error' => '[TestSkeinClientWorker::ErrorGenerator::CustomError] Example error!',
       'id' => message[:id]
     }
 

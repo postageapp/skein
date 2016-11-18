@@ -1,4 +1,4 @@
-class Skein::Publisher < Skein::Connected
+class Skein::Client::Publisher < Skein::Connected
   # == Instance Methods =====================================================
 
   def initialize(queue_name, connection: nil, context: nil)
