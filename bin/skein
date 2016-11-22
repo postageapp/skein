@@ -9,9 +9,11 @@ require_relative '../lib/skein'
 
 # == Support Classes ========================================================
 
-class EchoReceiver < Skein::Receiver
-  def initialize(options)
-    @debug = options[:debug]
+class EchoWorker < Skein::Client::Worker
+  def initialize(queue_name, options = nil)
+    super(queue_name, options || { })
+
+    @debug = options && options[:debug]
   end
 
   def echo(text)
@@ -96,7 +98,7 @@ when 'test'
   end
 when 'publish'
   rescue_safely(options) do
-    publisher = Skein::Publisher.new('test_pubsub')
+    publisher = Skein::Client.publisher('test_pubsub')
 
     loop do
       publisher << { test: Time.now.to_f }
@@ -106,7 +108,7 @@ when 'publish'
   end
 when 'subscribe'
   rescue_safely(options) do
-    subscriber = Skein::Subscriber.new('test_pubsub')
+    subscriber = Skein::Client.subscriber('test_pubsub')
 
     subscriber.listen do |*result|
       puts result.inspect
@@ -132,19 +134,19 @@ when 'echo'
 
     options[:threads].times.map do
       in_thread(options) do
-        client = Skein::Client.new('test_echo')
+        client = Skein::Client.rpc('test_echo')
 
         options[:count].times do |i|
           test_data = SecureRandom.uuid
 
-          response = client.echo(test_data)
+          response = client.echo!(test_data)
 
           results << (response == test_data)
 
           if (options[:verbose])
             puts '[%s] %s (%d/%d)' % [
               (response == test_data ? 'OK' : 'ERR'),
-              response,
+              response.inspect,
               i + 1,
               options[:count]
             ]
@@ -170,11 +172,7 @@ when 'echo'
 when 'echo_server'
   rescue_safely(options) do
     options[:threads].times.map do
-      in_thread(options) do
-        broker = Skein::Broker.new
-
-        broker.listen('test_echo', EchoReceiver.new(options))
-      end
+      EchoWorker.new('test_echo').thread
     end.each(&:join)
   end
 else

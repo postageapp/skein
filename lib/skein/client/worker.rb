@@ -3,6 +3,8 @@ require 'json'
 class Skein::Client::Worker < Skein::Connected
   # == Properties ===========================================================
 
+  attr_reader :thread
+
   # == Instance Methods =====================================================
 
   def initialize(queue_name, connection: nil, context: nil)

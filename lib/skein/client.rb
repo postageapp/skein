@@ -4,6 +4,24 @@ require 'fiber'
 class Skein::Client < Skein::Connected
   # == Properties ===========================================================
 
+  # == Class Methods ========================================================
+
+  def self.rpc(*args)
+    new.rpc(*args)
+  end
+
+  def self.receiver(*args)
+    new.receiver(*args)
+  end
+
+  def self.publisher(*args)
+    new.publisher(*args)
+  end
+
+  def self.subscriber(*args)
+    new.subscriber(*args)
+  end
+
   # == Instance Methods =====================================================
 
   def initialize

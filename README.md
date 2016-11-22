@@ -23,3 +23,15 @@ to start:
 
 For testing, set up `config/rabbitmq.yml` with configuration parameters that
 define how to connect to RabbitMQ.
+
+## Client Modes
+
+### RPC
+
+An RPC client can make blocking or non-blocking calls. By default calls are
+non-blocking, but they can be made blocking by adding `!` to the end of the
+method name. For example:
+
+    client = Skein::Client.rpc('test_queue')
+
+    client.request!(test: 'data')

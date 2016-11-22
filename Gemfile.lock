@@ -37,6 +37,7 @@ GEM
     multipart-post (2.0.0)
     nokogiri (1.6.8.1)
       mini_portile2 (~> 2.1.0)
+    nokogiri (1.6.8.1-java)
     oauth2 (1.2.0)
       faraday (>= 0.8, < 0.10)
       jwt (~> 1.0)
@@ -52,8 +53,10 @@ GEM
     test-unit (3.2.1)
       power_assert
     thread_safe (0.3.5)
+    thread_safe (0.3.5-java)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES
@@ -63,4 +66,4 @@ DEPENDENCIES
   test-unit
 
 BUNDLED WITH
-   1.13.3
+   1.13.6

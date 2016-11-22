@@ -12,7 +12,7 @@ class Skein::Connected
     @shared_connection = connection
 
     @connection = connection || Skein::RabbitMQ.connect
-    @channel = @connection.channel
+    @channel = @connection.create_channel
 
     @context = context || Skein::Context.new
     @ident = @context.ident(self)
