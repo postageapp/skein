@@ -36,5 +36,22 @@ method name. For example:
 
     client.request!(test: 'data')
 
+    client.close
+
 Note that non-blocking calls are fire-and-forget, there is no way of knowing
 if that operation succeeded or failed.
+
+### Worker
+
+The back-end that receives and processes RPC calls is instantiated as
+a `Skein::Client::Worker` instance:
+
+    class Responder < Skein::Client::Worker
+      def request
+        {
+          result: true
+        }
+      end
+    end
+
+    Responder.new('test_queue')

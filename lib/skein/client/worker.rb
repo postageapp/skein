@@ -56,6 +56,10 @@ class Skein::Client::Worker < Skein::Connected
     super
   end
 
+  def join
+    @thread and @thread.join
+  end
+
 protected
   def handle(message_json)
     # REFACTOR: Roll this into a module to keep it more contained.

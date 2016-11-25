@@ -174,7 +174,7 @@ when 'echo'
 when 'echo_server'
   rescue_safely(options) do
     options[:threads].times.map do
-      EchoWorker.new('test_echo').thread
+      EchoWorker.new('test_echo')
     end.each(&:join)
   end
 else
