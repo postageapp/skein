@@ -12,6 +12,8 @@ class Skein::Client::Subscriber < Skein::Connected
 
   def listen
     @subscribe_queue.subscribe(block: true) do |*args|
+      # REFACTOR: Fix decoding here on JSON payload
+      # REFACTOR: Abstract out differences between Bunny and MarchHare
       yield(*args)
     end
   end
