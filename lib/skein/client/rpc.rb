@@ -53,7 +53,7 @@ class Skein::Client::RPC < Skein::Connected
   def method_missing(name, *args)
     name = name.to_s
 
-    blocking = !!name.sub!(/!\z/, '')
+    blocking = !name.sub!(/!\z/, '')
 
     message_id = SecureRandom.uuid
     request = JSON.dump(

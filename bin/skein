@@ -134,12 +134,13 @@ when 'echo'
 
     options[:threads].times.map do
       in_thread(options) do
-        client = Skein::Client.rpc('test_echo')
+        client = Skein::Client.new
+        rpc = client.rpc('test_echo')
 
         options[:count].times do |i|
           test_data = SecureRandom.uuid
 
-          response = client.echo!(test_data)
+          response = rpc.echo(test_data)
 
           results << (response == test_data)
 
@@ -153,6 +154,7 @@ when 'echo'
           end
         end
 
+        rpc.close
         client.close
       end
     end.each(&:join)
