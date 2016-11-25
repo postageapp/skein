@@ -19,10 +19,17 @@ class Skein::Connected
     @ident = @context.ident(self)
   end
 
-  def close
+  def lock
     @mutex.synchronize do
+      yield
+    end
+  end
+
+  def close
+    lock do
       begin
         @channel and @channel.close
+
       rescue => e
         if (defined?(MarchHare))
           case e

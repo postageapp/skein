@@ -10,47 +10,50 @@ class Skein::Client::Worker < Skein::Connected
   def initialize(queue_name, connection: nil, context: nil)
     super(connection: connection, context: context)
 
-    @thread = Thread.new do
-      Thread.abort_on_exception = true
-
+    lock do
       queue = self.channel.queue(queue_name, durable: true)
 
-      queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
-        # FIX: Clean up friction here between Bunny and March Hare
-        # puts [metadata,payload,extra].map(&:class).inspect
+      @thread = Thread.new do
+        Thread.abort_on_exception = true
 
-        reply_to = nil
-        headers = nil
+        queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
+          # FIX: Clean up friction here between Bunny and March Hare
+          # puts [metadata,payload,extra].map(&:class).inspect
 
-        # NOTE: Bunny and MarchHare deal with this in a slightly different
-        #       capcity where the reply_to header is moved around.
-        if (extra)
-          headers = payload
-          payload = extra
+          reply_to = nil
+          headers = nil
 
-          reply_to = headers[:reply_to]
-        else
-          reply_to = metadata.reply_to
-        end
+          # NOTE: Bunny and MarchHare deal with this in a slightly different
+          #       capcity where the reply_to header is moved around.
+          if (extra)
+            headers = payload
+            payload = extra
 
-        reply = handle(payload)
+            reply_to = headers[:reply_to]
+          else
+            reply_to = metadata.reply_to
+          end
 
-        channel.acknowledge(metadata.delivery_tag, true)
+          reply = handle(payload)
 
-        if (reply_to)
-          channel.default_exchange.publish(
-            reply,
-            routing_key: reply_to
-          )
+          channel.acknowledge(metadata.delivery_tag, true)
+
+          if (reply_to)
+            channel.default_exchange.publish(
+              reply,
+              routing_key: reply_to
+            )
+          end
         end
       end
     end
   end
 
   def close
-    super
-
     @thread.kill
+    @thread.join
+
+    super
   end
 
 protected
