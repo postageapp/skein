@@ -11,10 +11,15 @@ class Skein::Client::Subscriber < Skein::Connected
   end
 
   def listen
-    @subscribe_queue.subscribe(block: true) do |*args|
-      # REFACTOR: Fix decoding here on JSON payload
-      # REFACTOR: Abstract out differences between Bunny and MarchHare
-      yield(*args)
+    case (@subscribe_queue.class.to_s.split(/::/)[0])
+    when 'Bunny'
+      @subscribe_queue.subscribe(block: true) do |delivery_info, properties, payload|
+        yield(JSON.load(payload), delivery_info, properties)
+      end
+    when 'MarchHare'
+      @subscribe_queue.subscribe(block: true) do |metadata, payload|
+        yield(JSON.load(payload), metadata)
+      end
     end
   end
 end

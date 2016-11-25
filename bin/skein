@@ -110,8 +110,9 @@ when 'subscribe'
   rescue_safely(options) do
     subscriber = Skein::Client.subscriber('test_pubsub')
 
-    subscriber.listen do |*result|
-      puts result.inspect
+    subscriber.listen do |message, metadata|
+      puts metadata.inspect
+      puts message.inspect
     end
   end
 when 'echo'
