@@ -24,8 +24,8 @@ class Skein::Client < Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize
-    super()
+  def initialize(connection: nil, context: nil)
+    super(connection: connection, context: context)
   end
 
   def rpc(queue_name = nil)
