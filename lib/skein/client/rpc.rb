@@ -43,11 +43,11 @@ class Skein::Client::RPC < Skein::Connected
     end
   end
 
-  def cancel!
+  def close
     @consumer and @consumer.cancel
     @consumer = nil
 
-    self.close
+    super
   end
 
   def method_missing(name, *args)

@@ -28,6 +28,9 @@ class TestSkeinClientWorker < Test::Unit::TestCase
     }
 
     assert_equal(expected, response)
+
+  ensure
+    worker.close
   end
 
   def test_throws_exception
@@ -47,5 +50,8 @@ class TestSkeinClientWorker < Test::Unit::TestCase
     }
 
     assert_equal(expected, response)
+
+  ensure
+    worker.close
   end
 end

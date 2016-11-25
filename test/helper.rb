@@ -28,6 +28,14 @@ class Test::Unit::TestCase
     end
   end
 
+  def assert_no_threads(message = nil)
+    threads = Thread.list.length
+
+    yield
+
+    assert_equal threads, Thread.list.length, message
+  end
+
   def data_path(name)
     File.expand_path(File.join('data', name), File.dirname(__FILE__))
   end

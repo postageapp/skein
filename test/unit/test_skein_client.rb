@@ -2,8 +2,17 @@ require_relative '../helper'
 
 class TestSkeinClient < Test::Unit::TestCase
   def test_default
-    client = Skein::Client.new
+    client = nil
 
-    assert client.context
+    assert_no_threads do
+      client = Skein::Client.new
+
+      assert client.context
+
+      client.close
+    end
+
+  # ensure
+  #   client and client.close
   end
 end

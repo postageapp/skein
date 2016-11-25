@@ -61,6 +61,8 @@ class Skein::Config < OpenStruct
   # == Instance Methods =====================================================
 
   def initialize(options = nil)
+    config_path = nil
+
     case (options)
     when String
       if (File.exist?(options))

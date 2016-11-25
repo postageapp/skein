@@ -9,7 +9,8 @@ class Skein::Connected
   # == Instance Methods =====================================================
 
   def initialize(connection: nil, context: nil)
-    @shared_connection = connection
+    @mutex = Mutex.new
+    @shared_connection = !!connection
 
     @connection = connection || Skein::RabbitMQ.connect
     @channel = @connection.create_channel
@@ -19,12 +20,26 @@ class Skein::Connected
   end
 
   def close
-    @channel.close
-    @channel = nil
+    @mutex.synchronize do
+      begin
+        @channel and @channel.close
+      rescue => e
+        if (defined?(MarchHare))
+          case e
+          when MarchHare::ChannelLevelException, MarchHare::ChannelAlreadyClosed
+            # Ignored since we're finished with the channel anyway
+          else
+            raise e
+          end
+        end
+      end
 
-    unless (@shared_connection)
-      @connection.close
-      @connection = nil
+      @channel = nil
+
+      unless (@shared_connection)
+        @connection and @connection.close
+        @connection = nil
+      end
     end
   end
 end
