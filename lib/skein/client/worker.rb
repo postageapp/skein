@@ -15,8 +15,6 @@ class Skein::Client::Worker < Skein::Connected
         @handler.handle(payload) do |reply_json|
           channel.acknowledge(delivery_tag, true)
 
-          puts reply_json.inspect
-
           if (reply_to)
             channel.default_exchange.publish(
               reply_json,
