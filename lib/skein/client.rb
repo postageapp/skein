@@ -40,8 +40,8 @@ class Skein::Client < Skein::Connected
     Skein::Client::Publisher.new(queue_name, connection: self.connection, context: self.context)
   end
 
-  def subscriber(queue_name)
-    Skein::Client::Subscriber.new(queue_name, connection: self.connection, context: self.context)
+  def subscriber(queue_name, routing_key = nil)
+    Skein::Client::Subscriber.new(queue_name, routing_key, connection: self.connection, context: self.context)
   end
 end
 
