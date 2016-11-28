@@ -4,11 +4,11 @@ class Skein::Client::Publisher < Skein::Connected
   def initialize(queue_name, connection: nil, context: nil)
     super(connection: connection, context: context)
 
-    @queue = self.channel.fanout(queue_name)
+    @queue = self.channel.topic(queue_name)
   end
 
-  def publish!(message)
-    @queue.publish(JSON.dump(message))
+  def publish!(message, routing_key = nil)
+    @queue.publish(JSON.dump(message), routing_key: routing_key)
   end
   alias_method :<<, :publish!
 end
