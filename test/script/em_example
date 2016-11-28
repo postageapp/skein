@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+
+gem 'eventmachine'
+require 'eventmachine'
+
+$LOAD_PATH << File.expand_path('../../lib', File.dirname(__FILE__))
+
+require 'skein'
+
+# == Support Classes ========================================================
+
+class EchoWorker < Skein::Client::Worker
+  def echo(*args)
+    yield(*args)
+  end
+
+  def async?
+    true
+  end
+end
+
+# == Main ===================================================================
+
+EventMachine.run do
+  EchoWorker.new('test_echo')
+end

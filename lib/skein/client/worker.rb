@@ -1,10 +1,6 @@
 require 'json'
 
 class Skein::Client::Worker < Skein::Connected
-  # == Properties ===========================================================
-
-  attr_reader :thread
-
   # == Instance Methods =====================================================
 
   def initialize(queue_name, connection: nil, context: nil)
@@ -13,35 +9,17 @@ class Skein::Client::Worker < Skein::Connected
     lock do
       queue = self.channel.queue(queue_name, durable: true)
 
-      @thread = Thread.new do
-        Thread.abort_on_exception = true
+      @handler = Skein::Handler.for(self)
 
-        queue.subscribe(manual_ack: true, block: true, headers: true) do |metadata, payload, extra|
-          # FIX: Clean up friction here between Bunny and March Hare
-          # puts [metadata,payload,extra].map(&:class).inspect
+      @subscriber = Skein::Subscriber.new(queue) do |payload, delivery_tag, reply_to|
+        @handler.handle(payload) do |reply_json|
+          channel.acknowledge(delivery_tag, true)
 
-          reply_to = nil
-          headers = nil
-
-          # NOTE: Bunny and MarchHare deal with this in a slightly different
-          #       capcity where the reply_to header is moved around.
-          if (extra)
-            headers = payload
-            payload = extra
-
-            reply_to = headers[:reply_to]
-          else
-            reply_to = metadata.reply_to
-          end
-
-          # FIX: Make asynchronous version
-          reply = handle(payload)
-
-          channel.acknowledge(metadata.delivery_tag, true)
+          puts reply_json.inspect
 
           if (reply_to)
             channel.default_exchange.publish(
-              reply,
+              reply_json,
               routing_key: reply_to
             )
           end
@@ -51,77 +29,21 @@ class Skein::Client::Worker < Skein::Connected
   end
 
   def close
-    @thread.kill
-    @thread.join
+    @subscriber.kill
+    @subscriber.join
 
     super
   end
 
   def join
-    @thread and @thread.join
+    @subscriber and @subscriber.join
+  end
+
+  def async?
+    # Define this method as `true` in any subclass that requires async
+    # callback-style delegation.
+    false
   end
 
 protected
-  def handle(message_json)
-    # REFACTOR: Roll this into a module to keep it more contained.
-    # REFACTOR: Use Skein::RPC::Request
-    request =
-      begin
-        JSON.load(message_json)
-
-      rescue Object => e
-        @context.exception!(e, message_json)
-
-        return JSON.dump(
-          result: nil,
-          error: '[%s] %s' % [ e.class, e ],
-          id: request['id']
-        )
-      end
-
-    case (request)
-    when Hash
-      # Acceptable
-    else
-      return JSON.dump(
-        result: nil,
-        error: 'Request does not conform to the JSON-RPC format.',
-        id: nil
-      )
-    end
-
-    request['params'] =
-      case (params = request['params'])
-      when Array
-        params
-      when nil
-        request.key?('params') ? [ nil ] : [ ]
-      else
-        [ request['params'] ]
-      end
-
-    unless (request['method'] and request['method'].is_a?(String) and request['method'].match(/\S/))
-      return JSON.dump(
-        result: nil,
-        error: 'Request does not conform to the JSON-RPC format, missing valid method.',
-        id: request['id']
-      )
-    end
-
-    begin
-      JSON.dump(
-        result: send(request['method'], *request['params']),
-        error: nil,
-        id: request['id']
-      )
-    rescue Object => e
-      @reporter and @reporter.exception!(e, message_json)
-
-      JSON.dump(
-        result: nil,
-        error: '[%s] %s' % [ e.class, e ],
-        id: request['id']
-      )
-    end
-  end
 end
