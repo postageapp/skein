@@ -16,7 +16,7 @@ class Skein::Client::RPC < Skein::Connected
     @rpc_queue = self.channel.queue(queue_name || QUEUE_NAME_DEFAULT, durable: true)
     @response_queue = self.channel.queue(@ident, durable: true, header: true, auto_delete: true)
 
-    @threads = { }
+    @callback = { }
 
     @consumer = @response_queue.subscribe do |metadata, payload, extra|
       # FIX: Deal with mixup between Bunny and MarchHare
@@ -33,8 +33,13 @@ class Skein::Client::RPC < Skein::Connected
       begin
         response = JSON.load(payload)
 
-        if (queue = @threads.delete(response['id']))
-          queue << response['result']
+        if (callback = @callback.delete(response['id']))
+          case (callback)
+          when Queue
+            callback << response['result']
+          when Proc
+            callback.call
+          end
         end
       rescue => e
         # FIX: Error handling
@@ -69,12 +74,21 @@ class Skein::Client::RPC < Skein::Connected
       message_id: message_id
     )
 
-    # FIX: Make non-blocking mode here
-
-    if (blocking)
+    if (block_given?)
+      @callback[message_id] =
+        if (defined?(EventMachine))
+          EventMachine.next_tick do
+            yield
+          end
+        else
+          lambda do
+            yield
+          end
+        end
+    elsif (blocking)
       queue = Queue.new
 
-      @threads[message_id] = queue
+      @callback[message_id] = queue
 
       queue.pop
     end

@@ -1,6 +1,6 @@
 require 'json'
 
-class Skein::Client::Worker < Skein::Connected
+class Skein::Client::WorkerAsync < Skein::Connected
   # == Properties ===========================================================
 
   attr_reader :thread
@@ -34,16 +34,15 @@ class Skein::Client::Worker < Skein::Connected
             reply_to = metadata.reply_to
           end
 
-          # FIX: Make asynchronous version
-          reply = handle(payload)
+          handle(payload) do |reply|
+            channel.acknowledge(metadata.delivery_tag, true)
 
-          channel.acknowledge(metadata.delivery_tag, true)
-
-          if (reply_to)
-            channel.default_exchange.publish(
-              reply,
-              routing_key: reply_to
-            )
+            if (reply_to)
+              channel.default_exchange.publish(
+                reply,
+                routing_key: reply_to
+              )
+            end
           end
         end
       end
@@ -109,11 +108,15 @@ protected
     end
 
     begin
-      JSON.dump(
-        result: send(request['method'], *request['params']),
-        error: nil,
-        id: request['id']
-      )
+      send(request['method'], *request['params']) do |result|
+        yield(
+          JSON.dump(
+            result: result,
+            error: nil,
+            id: request['id']
+          )
+        )
+      end
     rescue Object => e
       @reporter and @reporter.exception!(e, message_json)
 
