@@ -11,15 +11,19 @@ class Skein::Client::Worker < Skein::Connected
 
       @handler = Skein::Handler.for(self)
 
-      @subscriber = Skein::Subscriber.new(queue) do |payload, delivery_tag, reply_to|
-        @handler.handle(payload) do |reply_json|
-          channel.acknowledge(delivery_tag, true)
+      @subscriber = Skein::Client::Subscriber.new(queue_name, connection: self.connection)
 
-          if (reply_to)
-            channel.default_exchange.publish(
-              reply_json,
-              routing_key: reply_to
-            )
+      @thread = Thread.new do
+        @subscriber.listen do |payload, delivery_tag, reply_to|
+          @handler.handle(payload) do |reply_json|
+            channel.acknowledge(delivery_tag, true)
+
+            if (reply_to)
+              channel.default_exchange.publish(
+                reply_json,
+                routing_key: reply_to
+              )
+            end
           end
         end
       end
@@ -27,14 +31,14 @@ class Skein::Client::Worker < Skein::Connected
   end
 
   def close
-    @subscriber.kill
-    @subscriber.join
+    @thread.kill
+    @thread.join
 
     super
   end
 
   def join
-    @subscriber and @subscriber.join
+    @thread and @thread.join
   end
 
   def async?
