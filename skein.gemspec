@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
   s.authors = ["Scott Tadman".freeze]
-  s.date = "2016-11-28"
+  s.date = "2016-12-07"
   s.description = "Wrapper for RabbitMQ that makes blocking RPC calls and handles pub-sub broadcasts.".freeze
   s.email = "tadman@postageapp.com".freeze
   s.executables = ["skein".freeze]
@@ -22,6 +22,7 @@ Gem::Specification.new do |s|
     "Gemfile",
     "Gemfile.lock",
     "README.md",
+    "RELEASES.md",
     "Rakefile",
     "VERSION",
     "bin/skein",
@@ -36,6 +37,9 @@ Gem::Specification.new do |s|
     "lib/skein/config.rb",
     "lib/skein/connected.rb",
     "lib/skein/context.rb",
+    "lib/skein/handler.rb",
+    "lib/skein/handler/async.rb",
+    "lib/skein/handler/threaded.rb",
     "lib/skein/rabbitmq.rb",
     "lib/skein/reporter.rb",
     "lib/skein/rpc.rb",
@@ -48,6 +52,7 @@ Gem::Specification.new do |s|
     "skein.gemspec",
     "test/data/sample_config.yml",
     "test/helper.rb",
+    "test/script/em_example",
     "test/unit/test_skein_client.rb",
     "test/unit/test_skein_client_publisher.rb",
     "test/unit/test_skein_client_subscriber.rb",
