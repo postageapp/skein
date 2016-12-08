@@ -10,10 +10,10 @@ require_relative '../lib/skein'
 # == Support Classes ========================================================
 
 class EchoWorker < Skein::Client::Worker
-  def initialize(queue_name, options = nil)
-    super(queue_name, options || { })
+  def initialize(queue_name, debug: false, **options)
+    super(queue_name, options)
 
-    @debug = options && options[:debug]
+    @debug = debug
   end
 
   def echo(text)
@@ -56,7 +56,9 @@ end
 
 options = {
   count: 1,
-  threads: 1
+  threads: 1,
+  queue_name: 'test_echo',
+  exchange_name: nil
 }
 
 parser = OptionParser.new do |parser|
@@ -75,6 +77,13 @@ parser = OptionParser.new do |parser|
   end
   parser.on('-d', '--debug') do
     options[:debug] = true
+  end
+
+  parser.on('-e', '--exchange=s') do |s|
+    options[:exchange_name] = s
+  end
+  parser.on('-q', '--queue=s') do |s|
+    options[:queue_name] = s
   end
 
   parser.on('-h', '--help') do
@@ -138,17 +147,25 @@ when 'echo'
     options[:threads].times.map do
       in_thread(options) do
         client = Skein::Client.new
-        rpc = client.rpc('test_echo')
+        rpc = client.rpc(options[:exchange_name], routing_key: options[:queue_name])
 
         options[:count].times do |i|
           test_data = SecureRandom.uuid
+
+          if (options[:verbose])
+            print '[%s] ??? (%d/%d)' % [
+              '---',
+              i + 1,
+              options[:count]
+            ]
+          end
 
           response = rpc.echo(test_data)
 
           results << (response == test_data)
 
           if (options[:verbose])
-            puts '[%s] %s (%d/%d)' % [
+            puts "\r[%s] %s (%d/%d)" % [
               (response == test_data ? 'OK' : 'ERR'),
               response.inspect,
               i + 1,
@@ -177,7 +194,11 @@ when 'echo'
 when 'echo_server'
   rescue_safely(options) do
     options[:threads].times.map do
-      EchoWorker.new('test_echo')
+      EchoWorker.new(
+        options[:queue_name],
+        exchange_name: options[:exchange_name],
+        debug: options[:debug]
+      )
     end.each(&:join)
   end
 else

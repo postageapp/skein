@@ -22,8 +22,6 @@ class Skein::Handler
   end
 
   def handle(message_json)
-    # REFACTOR: Roll this into a module to keep it more contained.
-    # REFACTOR: Use Skein::RPC::Request
     request =
       begin
         JSON.load(message_json)
@@ -34,10 +32,12 @@ class Skein::Handler
         return yield(JSON.dump(
           result: nil,
           error: '[%s] %s' % [ e.class, e ],
-          id: request['id']
+          id: nil
         ))
       end
 
+    p request
+    
     case (request)
     when Hash
       # Acceptable
@@ -76,7 +76,7 @@ class Skein::Handler
         ))
       end
     rescue Object => e
-      @reporter and @reporter.exception!(e, message_json)
+      @context and @context.exception!(e, message_json)
 
       yield(JSON.dump(
         result: nil,

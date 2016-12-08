@@ -4,16 +4,17 @@ require 'fiber'
 class Skein::Client::RPC < Skein::Connected
   # == Constants ============================================================
 
-  QUEUE_NAME_DEFAULT = 'skein_rpc'.freeze
+  EXCHANGE_NAME_DEFAULT = ''.freeze
 
   # == Properties ===========================================================
 
   # == Instance Methods =====================================================
 
-  def initialize(queue_name = nil, connection: nil, context: nil)
+  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil)
     super(connection: connection, context: context)
 
-    @rpc_queue = self.channel.queue(queue_name || QUEUE_NAME_DEFAULT, durable: true)
+    @rpc_exchange = self.channel.direct(exchange_name || EXCHANGE_NAME_DEFAULT, durable: true)
+    @routing_key = routing_key
     @response_queue = self.channel.queue(@ident, durable: true, header: true, auto_delete: true)
 
     @callback = { }
@@ -67,10 +68,11 @@ class Skein::Client::RPC < Skein::Connected
       id: message_id
     )
 
-    @channel.default_exchange.publish(
+    @rpc_exchange.publish(
       request,
-      routing_key: @rpc_queue.name,
+      routing_key: @routing_key,
       reply_to: blocking ? @ident : nil,
+      content_type: 'application/json',
       message_id: message_id
     )
 

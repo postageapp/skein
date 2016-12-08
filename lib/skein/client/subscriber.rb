@@ -1,13 +1,20 @@
 class Skein::Client::Subscriber < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name, routing_key = nil, connection: nil, context: nil)
+  def initialize(exchange, routing_key = nil, connection: nil, context: nil)
     super(connection: connection, context: context)
 
-    @queue = self.channel.topic(queue_name)
+    @exchange =
+      case (exchange)
+      when String, Symbol
+        self.channel.topic(exchange)
+      else
+        exchange
+      end
+
     @subscribe_queue = self.channel.queue('', exclusive: true)
 
-    @subscribe_queue.bind(@queue, routing_key: routing_key)
+    @subscribe_queue.bind(@exchange, routing_key: routing_key)
   end
 
   def listen
