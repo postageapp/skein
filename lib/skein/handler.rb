@@ -1,4 +1,8 @@
 class Skein::Handler
+  # == Properties ===========================================================
+
+  attr_reader :context
+
   # == Class Methods ========================================================
 
   def self.for(target)
@@ -12,8 +16,9 @@ class Skein::Handler
 
   # == Instance Methods =====================================================
 
-  def initialize(target)
+  def initialize(target, context = nil)
     @target = target
+    @context = context
   end
 
   def handle(message_json)
@@ -24,7 +29,7 @@ class Skein::Handler
         JSON.load(message_json)
 
       rescue Object => e
-        @context.exception!(e, message_json)
+        @context and @context.exception!(e, message_json)
 
         return yield(JSON.dump(
           result: nil,
