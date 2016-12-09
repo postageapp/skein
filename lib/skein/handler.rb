@@ -36,8 +36,6 @@ class Skein::Handler
         ))
       end
 
-    p request
-    
     case (request)
     when Hash
       # Acceptable

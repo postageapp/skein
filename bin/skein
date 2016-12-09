@@ -144,6 +144,11 @@ when 'echo'
       end
     end
 
+    if (options[:threads] > 1)
+      # Warm up RabbitMQ driver, force all autoloads
+      Skein::Client.new.close
+    end
+
     options[:threads].times.map do
       in_thread(options) do
         client = Skein::Client.new

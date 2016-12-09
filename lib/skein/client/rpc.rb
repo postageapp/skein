@@ -42,9 +42,9 @@ class Skein::Client::RPC < Skein::Connected
             callback.call
           end
         end
+        
       rescue => e
-        # FIX: Error handling
-        puts e.inspect
+        self.context and self.context.exception!(e)
       end
     end
   end
