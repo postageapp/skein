@@ -35,4 +35,10 @@ class Skein::Context
   def exception!(*args)
     @reporter and @reporter.exception!(*args)
   end
+
+  def trap
+    yield
+  rescue => e
+    self.exception!(e)
+  end
 end

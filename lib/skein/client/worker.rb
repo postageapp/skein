@@ -21,7 +21,7 @@ class Skein::Client::Worker < Skein::Connected
       @thread = Thread.new do
         Thread.abort_on_exception = true
 
-        listen do |payload, delivery_tag, reply_to|
+        Skein::Adapter.subscribe(@queue) do |payload, delivery_tag, reply_to|
           @handler.handle(payload) do |reply_json|
             channel.acknowledge(delivery_tag, true)
 
@@ -53,19 +53,5 @@ class Skein::Client::Worker < Skein::Connected
     # Define this method as `true` in any subclass that requires async
     # callback-style delegation.
     false
-  end
-
-protected
-  def listen
-    case (@queue.class.to_s.split(/::/)[0])
-    when 'Bunny'
-      @queue.subscribe(block: true, manual_ack: true) do |delivery_info, properties, payload|
-        yield(payload, delivery_info[:delivery_tag], properties[:reply_to])
-      end
-    when 'MarchHare'
-      @queue.subscribe(block: true, manual_ack: true) do |metadata, payload|
-        yield(payload, metadata.delivery_tag, metadata.reply_to)
-      end
-    end
   end
 end

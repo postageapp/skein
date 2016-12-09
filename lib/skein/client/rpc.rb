@@ -19,19 +19,8 @@ class Skein::Client::RPC < Skein::Connected
 
     @callback = { }
 
-    @consumer = @response_queue.subscribe do |metadata, payload, extra|
-      # FIX: Deal with mixup between Bunny and MarchHare
-      # puts [metadata,payload,extra].inspect
-
-      # puts [metadata,payload,extra].map(&:class).inspect
-
-      if (extra)
-        payload = extra
-      elsif (!payload)
-        payload = metadata
-      end
-
-      begin
+    @consumer = Skein::Adapter.subscribe(@response_queue, block: false) do |payload, delivery_tag, reply_to|
+      self.context.trap do
         response = JSON.load(payload)
 
         if (callback = @callback.delete(response['id']))
@@ -42,9 +31,8 @@ class Skein::Client::RPC < Skein::Connected
             callback.call
           end
         end
-        
-      rescue => e
-        self.context and self.context.exception!(e)
+
+        self.channel.acknowledge(delivery_tag)
       end
     end
   end
