@@ -69,7 +69,15 @@ class Skein::Config < OpenStruct
         config_path = options
       end
     when Hash
-      super(options)
+      super(
+        DEFAULTS.merge(
+          Hash[
+            options.map do |k, v|
+              [ k.nil? ? nil : k.to_sym, v ]
+            end
+          ]
+        )
+      )
 
       return
     when false, :default

@@ -30,4 +30,30 @@ class TestSkeinConfig < Test::Unit::TestCase
   def test_config_exists
     assert_equal(true, Skein::Config.exist?)
   end
+
+  def test_config_with_hash_string_keys
+    config = Skein::Config.new(
+      'host' => 'custom.host',
+      'namespace' => 'custom'
+    )
+
+    assert_equal('custom.host', config.host)
+    assert_equal(5672, config.port)
+    assert_equal('guest', config.username)
+    assert_equal('guest', config.password)
+    assert_equal('custom', config.namespace)
+  end
+
+  def test_config_with_hash_symbol_keys
+    config = Skein::Config.new(
+      host: 'symbol.host',
+      namespace: 'symbol'
+    )
+
+    assert_equal('symbol.host', config.host)
+    assert_equal(5672, config.port)
+    assert_equal('guest', config.username)
+    assert_equal('guest', config.password)
+    assert_equal('symbol', config.namespace)
+  end
 end
