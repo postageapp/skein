@@ -9,7 +9,7 @@ require 'jeweler'
 Jeweler::Tasks.new do |gem|
   gem.name = 'skein'
   gem.homepage = 'http://github.com/postageapp/skein'
-  gem.license = 'closed'
+  gem.license = 'MIT'
   gem.summary = %Q{RabbitMQ RPC/PubSub Library}
   gem.description = %Q{Wrapper for RabbitMQ that makes blocking RPC calls and handles pub-sub broadcasts.}
   gem.email = 'tadman@postageapp.com'

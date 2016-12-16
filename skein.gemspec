@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
   s.authors = ["Scott Tadman".freeze]
-  s.date = "2016-12-14"
+  s.date = "2016-12-16"
   s.description = "Wrapper for RabbitMQ that makes blocking RPC calls and handles pub-sub broadcasts.".freeze
   s.email = "tadman@postageapp.com".freeze
   s.executables = ["skein".freeze]
@@ -68,7 +68,7 @@ Gem::Specification.new do |s|
     "tmp/.gitignore"
   ]
   s.homepage = "http://github.com/postageapp/skein".freeze
-  s.licenses = ["closed".freeze]
+  s.licenses = ["MIT".freeze]
   s.rubygems_version = "2.5.2".freeze
   s.summary = "RabbitMQ RPC/PubSub Library".freeze
 
