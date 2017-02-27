@@ -16,14 +16,14 @@ class Skein::Client::Subscriber < Skein::Connected
     @subscribe_queue.bind(@exchange, routing_key: routing_key)
   end
 
-  def listen
+  def listen(block = true)
     case (@subscribe_queue.class.to_s.split(/::/)[0])
     when 'Bunny'
-      @subscribe_queue.subscribe(block: true) do |delivery_info, properties, payload|
+      @subscribe_queue.subscribe(block: block) do |delivery_info, properties, payload|
         yield(JSON.load(payload), delivery_info, properties)
       end
     when 'MarchHare'
-      @subscribe_queue.subscribe(block: true) do |metadata, payload|
+      @subscribe_queue.subscribe(block: block) do |metadata, payload|
         yield(JSON.load(payload), metadata)
       end
     end
