@@ -13,7 +13,9 @@ require 'skein'
 
 class EchoWorker < Skein::Client::Worker
   def echo(*args)
-    yield(*args)
+    EventMachine.next_tick do
+      yield(*args)
+    end
   end
 
   def async?
