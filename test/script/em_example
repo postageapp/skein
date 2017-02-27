@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
+require 'optparse'
 
 gem 'eventmachine'
 require 'eventmachine'
@@ -12,8 +13,23 @@ require 'skein'
 # == Support Classes ========================================================
 
 class EchoWorker < Skein::Client::Worker
+  def initialize(*args, concurrency: nil, delay: nil, wait: false, verbose: false)
+    super(*args, concurrency: concurrency)
+
+    @delay = delay || 0.0
+    @wait = false
+  end
+
   def echo(*args)
-    EventMachine.next_tick do
+    if (@delay > 0)
+      EventMachine::Timer.new(self.delay) do
+        yield(*args)
+      end
+    elsif (@wait)
+      EventMachine.next_tick do
+        yield(*args)
+      end
+    else
       yield(*args)
     end
   end
@@ -25,6 +41,38 @@ end
 
 # == Main ===================================================================
 
+options = {
+  concurrency: 1,
+  delay: 0.0,
+  wait: false,
+  verbose: false
+}
+
+parser = OptionParser.new do |parser|
+  parser.on('-v', '--verbose') do
+    options[:verbose] = true
+  end
+
+  parser.on('-d', '--delay=n') do |n|
+    options[:delay] = n.to_f
+  end
+
+  parser.on('-c', '--concurrency=n') do |n|
+    options[:concurrency] = n.to_i
+  end
+
+  parser.on('-w', '--wait') do
+    options[:wait] = true
+  end
+
+  parser.on('-h', '--help') do
+    puts parser
+    exit(0)
+  end
+end
+
+args = parser.parse(*ARGV)
+
 EventMachine.run do
-  EchoWorker.new('test_echo')
+  worker = EchoWorker.new('test_echo', options)
 end

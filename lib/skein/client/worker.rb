@@ -3,7 +3,7 @@ require 'json'
 class Skein::Client::Worker < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil)
+  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil)
     super(connection: connection, context: context)
 
     lock do
@@ -17,21 +17,56 @@ class Skein::Client::Worker < Skein::Connected
       end
 
       @handler = Skein::Handler.for(self)
+      @received = Queue.new
+      @replies = Queue.new
+      @concurrency = concurrency && concurrency.to_i || 1
+      @threads = [ ]
 
-      @thread = Thread.new do
+      @threads << Thread.new do
         Thread.abort_on_exception = true
 
         Skein::Adapter.subscribe(@queue) do |payload, delivery_tag, reply_to|
-          @handler.handle(payload) do |reply_json|
-            channel.acknowledge(delivery_tag, true)
+          @received << [ payload, delivery_tag, reply_to ]
+        end
+      end
 
-            if (reply_to)
-              @reply_exchange.publish(
-                reply_json,
-                routing_key: reply_to,
-                content_type: 'application/json'
-              )
+      @threads << Thread.new do
+        Thread.abort_on_exception = true
+
+        loop do
+          payload, delivery_tag, reply_to, reply_json = @replies.pop
+
+          channel.acknowledge(delivery_tag, true)
+
+          if (reply_to)
+            @reply_exchange.publish(
+              reply_json,
+              routing_key: reply_to,
+              content_type: 'application/json'
+            )
+          end
+        end
+      end
+
+      @concurrency.times do
+        @threads << Thread.new do
+          Thread.abort_on_exception = true
+
+          loop do
+            payload, delivery_tag, reply_to = @received.pop
+            thread = Thread.current
+
+            @handler.handle(payload) do |reply_json|
+              @replies << [ payload, delivery_tag, reply_to, reply_json ]
+
+              if (thread == Thread.current)
+                thread = nil
+              else
+                thread.wakeup
+              end
             end
+
+            thread and Thread.stop
           end
         end
       end
@@ -39,14 +74,18 @@ class Skein::Client::Worker < Skein::Connected
   end
 
   def close
-    @thread.kill
-    @thread.join
+    @threads.each do |thread|
+      thread.kill
+      thread.join
+    end
 
     super
   end
 
   def join
-    @thread and @thread.join
+    @threads.each do |thread|
+      thread.join
+    end
   end
 
   def async?
