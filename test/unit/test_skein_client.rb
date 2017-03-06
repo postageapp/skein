@@ -5,14 +5,14 @@ class TestSkeinClient < Test::Unit::TestCase
     client = nil
 
     assert_no_threads do
-      client = Skein::Client.new
+      begin
+        client = Skein::Client.new
 
-      assert client.context
+        assert client.context
 
-      client.close
+      ensure
+        client and client.close
+      end
     end
-
-  # ensure
-  #   client and client.close
   end
 end

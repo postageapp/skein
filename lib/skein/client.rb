@@ -10,8 +10,8 @@ class Skein::Client < Skein::Connected
     new.rpc(*args)
   end
 
-  def self.receiver(*args)
-    new.receiver(*args)
+  def self.worker(*args)
+    new.worker(*args)
   end
 
   def self.publisher(*args)
@@ -37,8 +37,8 @@ class Skein::Client < Skein::Connected
     )
   end
 
-  def receiver
-    Skein::Client::Receiver.new(
+  def worker
+    Skein::Client::Worker.new(
       connection: self.connection,
       context: self.context
     )
