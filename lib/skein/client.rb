@@ -37,8 +37,9 @@ class Skein::Client < Skein::Connected
     )
   end
 
-  def worker
+  def worker(queue_name)
     Skein::Client::Worker.new(
+      queue_name,
       connection: self.connection,
       context: self.context
     )
