@@ -26,6 +26,8 @@ class Skein::Client::Subscriber < Skein::Connected
       @subscribe_queue.subscribe(block: block) do |metadata, payload|
         yield(JSON.load(payload), metadata)
       end
+    else
+      raise "Unknown queue type #{@subscribe_queue.class}, cannot listen."
     end
   end
 end
