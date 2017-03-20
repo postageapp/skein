@@ -71,6 +71,13 @@ class Skein::Client::Worker < Skein::Connected
         end
       end
     end
+
+    self.after_initialize
+  end
+
+  # Extend this in derived classes to implement any desired customization to
+  # be performed after initialization
+  def after_initialize
   end
 
   def close
