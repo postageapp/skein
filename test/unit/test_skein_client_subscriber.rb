@@ -31,11 +31,11 @@ class TestSkeinClientSubscriber < Test::Unit::TestCase
 
     thread.join
 
-    assert_equal({ "data" => true }, received)
+    assert_equal({ 'data' => true }, received)
 
   ensure
-    publisher and publisher.close
-    subscriber and subscriber.close
+    publisher and publisher.close(delete_queue: true)
+    subscriber and subscriber.close(delete_queue: true)
     client and client.close
   end
 end

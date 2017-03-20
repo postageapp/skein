@@ -33,7 +33,7 @@ class TestSkeinClientWorker < Test::Unit::TestCase
     end
 
   ensure
-    worker and worker.close
+    worker and worker.close(delete_queue: true)
   end
 
   def test_throws_exception
@@ -56,6 +56,6 @@ class TestSkeinClientWorker < Test::Unit::TestCase
     end
 
   ensure
-    worker and worker.close
+    worker and worker.close(delete_queue: true)
   end
 end

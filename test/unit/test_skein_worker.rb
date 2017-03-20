@@ -19,6 +19,8 @@ class TestSkeinWorker < Test::Unit::TestCase
     assert_equal false, worker.async?
 
   ensure
+    worker and worker.close(delete_queue: true)
+
     client and client.close
   end
 
@@ -33,6 +35,8 @@ class TestSkeinWorker < Test::Unit::TestCase
     assert_equal true, worker.initialized
 
   ensure
+    worker and worker.close(delete_queue: true)
+
     client and client.close
   end
 end

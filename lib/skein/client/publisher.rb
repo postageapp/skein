@@ -11,4 +11,12 @@ class Skein::Client::Publisher < Skein::Connected
     @queue.publish(JSON.dump(message), routing_key: routing_key)
   end
   alias_method :<<, :publish!
+
+  def close(delete_queue: false)
+    if (delete_queue)
+      @queue.delete
+    end
+
+    super()
+  end
 end

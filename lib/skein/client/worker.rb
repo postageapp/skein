@@ -80,13 +80,17 @@ class Skein::Client::Worker < Skein::Connected
   def after_initialize
   end
 
-  def close
+  def close(delete_queue: false)
     @threads.each do |thread|
       thread.kill
       thread.join
     end
 
-    super
+    if (delete_queue)
+      @queue.delete
+    end
+
+    super()
   end
 
   def join

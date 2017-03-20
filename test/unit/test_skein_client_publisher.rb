@@ -5,6 +5,6 @@ class TestSkeinPublisher < Test::Unit::TestCase
     publisher = Skein::Client::Publisher.new('test_name')
 
   ensure
-    publisher and publisher.close
+    publisher and publisher.close(delete_queue: true)
   end
 end

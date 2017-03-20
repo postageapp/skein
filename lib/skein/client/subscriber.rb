@@ -30,4 +30,12 @@ class Skein::Client::Subscriber < Skein::Connected
       raise "Unknown queue type #{@subscribe_queue.class}, cannot listen."
     end
   end
+
+  def close(delete_queue: false)
+    if (delete_queue)
+      @subscribe_queue.delete
+    end
+
+    super()
+  end
 end
