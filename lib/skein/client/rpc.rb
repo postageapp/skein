@@ -15,7 +15,12 @@ class Skein::Client::RPC < Skein::Connected
 
     @rpc_exchange = self.channel.direct(exchange_name || EXCHANGE_NAME_DEFAULT, durable: true)
     @routing_key = routing_key
-    @response_queue = self.channel.queue(@ident, durable: true, header: true, auto_delete: true)
+    @response_queue = self.channel.queue(
+      @ident,
+      durable: false,
+      header: true,
+      auto_delete: true
+    )
 
     @callback = { }
 

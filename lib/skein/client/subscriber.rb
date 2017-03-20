@@ -12,7 +12,7 @@ class Skein::Client::Subscriber < Skein::Connected
         exchange
       end
 
-    @subscribe_queue = self.channel.queue('', exclusive: true)
+    @subscribe_queue = self.channel.queue('', exclusive: true, durable: false)
     @subscribe_queue.bind(@exchange, routing_key: routing_key)
   end
 

@@ -8,7 +8,7 @@ class Skein::Client::Worker < Skein::Connected
 
     lock do
       @reply_exchange = self.channel.default_exchange
-      @queue = self.channel.queue(queue_name, durable: true)
+      @queue = self.channel.queue(queue_name, durable: queue_name.match(/\S/))
 
       if (exchange_name)
         @exchange = self.channel.direct(exchange_name, durable: true)
