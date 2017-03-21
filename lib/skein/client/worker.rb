@@ -3,71 +3,49 @@ require 'json'
 class Skein::Client::Worker < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil)
+  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil)
     super(connection: connection, context: context)
 
-    lock do
-      @reply_exchange = self.channel.default_exchange
-      @queue = self.channel.queue(queue_name, durable: !!queue_name.match(/\S/))
+    @queue_name = queue_name
+    @handler = Skein::Handler.for(self)
+    concurrency = concurrency && concurrency.to_i || 1
+    @threads = [ ]
+    @durable = durable.nil? ? !!@queue_name.match(/\S/) : false
 
-      if (exchange_name)
-        @exchange = self.channel.direct(exchange_name, durable: true)
+    concurrency.times do |i|
+      queue = Queue.new
 
-        @queue.bind(@exchange)
-      end
+      with_channel_in_thread do |channel|
+        queue = channel.queue(@queue_name, durable: @durable)
 
-      @handler = Skein::Handler.for(self)
-      @received = Queue.new
-      @replies = Queue.new
-      @concurrency = concurrency && concurrency.to_i || 1
-      @threads = [ ]
+        if (exchange_name)
+          exchange = channel.direct(exchange_name, durable: true)
 
-      @threads << Thread.new do
-        Thread.abort_on_exception = true
-
-        Skein::Adapter.subscribe(@queue) do |payload, delivery_tag, reply_to|
-          @received << [ payload, delivery_tag, reply_to ]
+          queue.bind(exchange)
         end
-      end
 
-      @threads << Thread.new do
-        Thread.abort_on_exception = true
+        sync = Queue.new
 
-        loop do
-          payload, delivery_tag, reply_to, reply_json = @replies.pop
+        Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
+          self.before_request
 
-          channel.acknowledge(delivery_tag, true)
+          @handler.handle(payload) do |reply_json|
+            channel.acknowledge(delivery_tag, true)
 
-          if (reply_to)
-            @reply_exchange.publish(
-              reply_json,
-              routing_key: reply_to,
-              content_type: 'application/json'
-            )
-          end
-        end
-      end
-
-      @concurrency.times do
-        @threads << Thread.new do
-          Thread.abort_on_exception = true
-
-          loop do
-            payload, delivery_tag, reply_to = @received.pop
-            thread = Thread.current
-
-            @handler.handle(payload) do |reply_json|
-              @replies << [ payload, delivery_tag, reply_to, reply_json ]
-
-              if (thread == Thread.current)
-                thread = nil
-              else
-                thread.wakeup
-              end
+            if (reply_to)
+              channel.default_exchange.publish(
+                reply_json,
+                routing_key: reply_to,
+                content_type: 'application/json'
+              )
             end
 
-            thread and Thread.stop
+            self.after_request
+
+            sync << nil
           end
+
+          sync.pop
         end
       end
     end
@@ -80,6 +58,16 @@ class Skein::Client::Worker < Skein::Connected
   def after_initialize
   end
 
+  # Extend this in derived classes to implement any behaviour that should be
+  # triggered prior to handling a request.
+  def before_request
+  end
+
+  # Extend this in derived classes to implement any behaviour that should be
+  # triggered  after handling a request, even if an error occurred.
+  def after_request
+  end
+
   def close(delete_queue: false)
     @threads.each do |thread|
       thread.kill
@@ -87,7 +75,11 @@ class Skein::Client::Worker < Skein::Connected
     end
 
     if (delete_queue)
-      @queue.delete
+      channel = @connection.create_channel
+
+      channel.queue(@queue_name, durable: @durable).delete
+
+      channel.close
     end
 
     super()
@@ -103,5 +95,26 @@ class Skein::Client::Worker < Skein::Connected
     # Define this method as `true` in any subclass that requires async
     # callback-style delegation.
     false
+  end
+
+protected
+  def in_thread
+    @threads << Thread.new do
+      Thread.abort_on_exception = true
+
+      yield
+    end
+  end
+
+  def with_channel_in_thread
+    thread_channel = @connection.create_channel
+
+    @threads << Thread.new do
+      Thread.abort_on_exception = true
+
+      yield(thread_channel)
+
+      thread_channel.close
+    end
   end
 end

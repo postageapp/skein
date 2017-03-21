@@ -4,7 +4,6 @@ class Skein::Connected
   attr_reader :context
   attr_reader :ident
   attr_reader :connection
-  attr_reader :channel
 
   # == Instance Methods =====================================================
 
@@ -13,7 +12,7 @@ class Skein::Connected
     @shared_connection = !!connection
 
     @connection = connection || Skein::RabbitMQ.connect
-    @channel = @connection.create_channel
+    @channels = [ ]
 
     @context = context || Skein::Context.new
     @ident = @context.ident(self)
@@ -25,14 +24,25 @@ class Skein::Connected
     end
   end
 
+  def channel
+    @channel ||= begin
+      channel = @connection.create_channel
+      @channels << channel
+
+      channel
+    end
+  end
+
   def close
     lock do
       begin
-        @channel and @channel.close
+        @channels.each do |channel|
+          channel.close
+        end
 
       rescue => e
         if (defined?(MarchHare))
-          case e
+          case (e)
           when MarchHare::ChannelLevelException, MarchHare::ChannelAlreadyClosed
             # Ignored since we're finished with the channel anyway
           else
