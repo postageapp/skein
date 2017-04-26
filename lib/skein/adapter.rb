@@ -2,8 +2,6 @@ module Skein::Adapter
   # == Mixin Methods =========================================================
   
   def subscribe(queue, block: true, manual_ack: true)
-    p queue
-
     case (queue.class.to_s.split(/::/)[0])
     when 'Bunny'
       queue.subscribe(block: block, manual_ack: manual_ack) do |delivery_info, properties, payload|
