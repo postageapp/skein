@@ -2,18 +2,11 @@ class Skein::Handler::Async < Skein::Handler
   # == Instance Methods =====================================================
 
   def delegate(*args)
-    thread = Thread.current
-
-    @target.send(*args) do |response, error|
-      if (thread == Thread.current)
-        thread = nil
-      else
-        thread.wakeup
-      end
-
-      yield(response, error)
+    @target.send(*args) do |*response|
+      yield(*response)
     end
 
-    thread and thread.stop
+  rescue Object => e
+    yield([ e, e.backtrace ])
   end
 end

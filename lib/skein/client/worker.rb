@@ -7,7 +7,6 @@ class Skein::Client::Worker < Skein::Connected
     super(connection: connection, context: context)
 
     @queue_name = queue_name
-    @handler = Skein::Handler.for(self)
     concurrency = concurrency && concurrency.to_i || 1
     @threads = [ ]
     @durable = durable.nil? ? !!@queue_name.match(/\S/) : false
@@ -29,7 +28,7 @@ class Skein::Client::Worker < Skein::Connected
         Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
           self.before_request
 
-          @handler.handle(payload) do |reply_json|
+          handler.handle(payload) do |reply_json|
             channel.acknowledge(delivery_tag, true)
 
             if (reply_to)
@@ -116,5 +115,9 @@ protected
 
       thread_channel.close
     end
+  end
+
+  def handler
+    @handler ||= Skein::Handler.for(self)
   end
 end
