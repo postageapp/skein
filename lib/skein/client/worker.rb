@@ -7,13 +7,11 @@ class Skein::Client::Worker < Skein::Connected
     super(connection: connection, context: context)
 
     @queue_name = queue_name
-    concurrency = concurrency && concurrency.to_i || 1
+    concurrency &&= concurrency.to_i
     @threads = [ ]
-    @durable = durable.nil? ? !!@queue_name.match(/\S/) : false
+    @durable = durable.nil? ? !!@queue_name.match(/\S/) : !!durable
 
-    concurrency.times do |i|
-      queue = Queue.new
-
+    (concurrency || 1).times do |i|
       with_channel_in_thread do |channel|
         queue = channel.queue(@queue_name, durable: @durable)
 
@@ -23,7 +21,7 @@ class Skein::Client::Worker < Skein::Connected
           queue.bind(exchange)
         end
 
-        sync = Queue.new
+        sync = concurrency && Queue.new
 
         Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
           self.before_request
@@ -41,10 +39,10 @@ class Skein::Client::Worker < Skein::Connected
 
             self.after_request
 
-            sync << nil
+            sync and sync << nil
           end
 
-          sync.pop
+          sync and sync.pop
         end
       end
     end
