@@ -3,7 +3,7 @@ require 'json'
 class Skein::Client::Worker < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil)
+  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil, auto_delete: false)
     super(connection: connection, context: context)
 
     @queue_name = queue_name
@@ -15,12 +15,12 @@ class Skein::Client::Worker < Skein::Connected
       queue = Queue.new
 
       with_channel_in_thread do |channel|
-        queue = channel.queue(@queue_name, durable: @durable)
+        queue = channel.queue(@queue_name, auto_delete: auto_delete, durable: @durable)
 
         if (exchange_name)
           exchange = channel.direct(exchange_name, durable: true)
 
-          queue.bind(exchange)
+          queue.bind(exchange, routing_key: @queue_name)
         end
 
         sync = Queue.new

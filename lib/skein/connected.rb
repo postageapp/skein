@@ -27,6 +27,8 @@ class Skein::Connected
   def channel
     @channel ||= begin
       channel = @connection.create_channel
+      channel.prefetch(0)
+
       @channels << channel
 
       channel
