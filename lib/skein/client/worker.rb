@@ -115,9 +115,14 @@ protected
     @threads << Thread.new do
       Thread.abort_on_exception = true
 
-      yield(thread_channel)
-
-      thread_channel.close
+      begin
+        yield(thread_channel)
+      ensure
+        # NOTE: The `.close` call may fail for a variety of reasons, but the
+        #       important thing here is an attempt is made, regardless of
+        #       outcome.
+        thread_channel.close rescue nil
+      end
     end
   end
 
