@@ -23,6 +23,7 @@ module Skein::RabbitMQ
     end
   end
 
+  # REFACTOR: These should be moved to an abstract adapter
   def self.connect(config = nil)
     config ||= Skein.config
 

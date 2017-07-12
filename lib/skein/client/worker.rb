@@ -3,27 +3,29 @@ require 'json'
 class Skein::Client::Worker < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil, auto_delete: false)
+  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil, auto_delete: false, routing_key: nil)
     super(connection: connection, context: context)
 
     @queue_name = queue_name
-    concurrency = concurrency && concurrency.to_i || 1
+    concurrency &&= concurrency.to_i
     @threads = [ ]
-    @durable = durable.nil? ? !!@queue_name.match(/\S/) : false
+    @durable = durable.nil? ? !!@queue_name.match(/\S/) : !!durable
 
-    concurrency.times do |i|
-      queue = Queue.new
-
+    (concurrency || 1).times do |i|
       with_channel_in_thread do |channel|
-        queue = channel.queue(@queue_name, auto_delete: auto_delete, durable: @durable)
+        queue = channel.queue(
+          @queue_name,
+          durable: @durable,
+          auto_delete: auto_delete
+        )
 
         if (exchange_name)
           exchange = channel.direct(exchange_name, durable: true)
 
-          queue.bind(exchange, routing_key: @queue_name)
+          queue.bind(exchange, routing_key: routing_key || @queue_name)
         end
 
-        sync = Queue.new
+        sync = concurrency && Queue.new
 
         Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
           self.before_request
@@ -41,10 +43,10 @@ class Skein::Client::Worker < Skein::Connected
 
             self.after_request
 
-            sync << nil
+            sync and sync << nil
           end
 
-          sync.pop
+          sync and sync.pop
         end
       end
     end
@@ -74,6 +76,8 @@ class Skein::Client::Worker < Skein::Connected
     end
 
     if (delete_queue)
+      # The connection may have been terminated, so reconnect and delete
+      # the queue if necessary.
       channel = @connection.create_channel
 
       channel.queue(@queue_name, durable: @durable).delete
