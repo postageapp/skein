@@ -56,6 +56,7 @@ class Skein::Client::RPC < Skein::Connected
 
     message_id = SecureRandom.uuid
     request = JSON.dump(
+      jsonrpc: '2.0',
       method: name,
       params: args,
       id: message_id

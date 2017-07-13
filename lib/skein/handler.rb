@@ -41,8 +41,11 @@ class Skein::Handler
       # Acceptable
     else
       return yield(JSON.dump(
-        result: nil,
-        error: 'Request does not conform to the JSON-RPC format.',
+        jsonrpc: '2.0',
+        error: {
+          code: -32600,
+          message: 'Request does not conform to the JSON-RPC format.'
+        },
         id: nil
       ))
     end
@@ -59,8 +62,11 @@ class Skein::Handler
 
     unless (request['method'] and request['method'].is_a?(String) and request['method'].match(/\S/))
       return yield(JSON.dump(
-        result: nil,
-        error: 'Request does not conform to the JSON-RPC format, missing valid method.',
+        jsonrpc: '2.0',
+        error: {
+          code: -32600,
+          message: 'Request does not conform to the JSON-RPC format, missing valid method.'
+        },
         id: request['id']
       ))
     end
@@ -68,17 +74,32 @@ class Skein::Handler
     begin
       delegate(request['method'], *request['params']) do |result, error = nil|
         yield(JSON.dump(
+          jsonrpc: '2.0',
           result: result,
           error: error,
           id: request['id']
         ))
       end
+    rescue NoMethodError
+      @context and @context.exception!(e, message_json)
+
+      yield(JSON.dump(
+        jsonrpc: '2.0',
+        error: {
+          code: -32601,
+          message: 'Method not found'
+        },
+        id: request['id']
+      ))
     rescue Object => e
       @context and @context.exception!(e, message_json)
 
       yield(JSON.dump(
-        result: nil,
-        error: '[%s] %s' % [ e.class, e ],
+        jsonrpc: '2.0',
+        error: {
+          code: -32063, 
+          message: '[%s] %s' % [ e.class, e ]
+        },
         id: request['id']
       ))
     end

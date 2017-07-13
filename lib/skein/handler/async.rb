@@ -3,10 +3,8 @@ class Skein::Handler::Async < Skein::Handler
 
   def delegate(*args)
     @target.send(*args) do |*response|
+      # FIX: Capture errors at this level during yield
       yield(*response)
     end
-
-  rescue Object => e
-    yield([ e, e.backtrace ])
   end
 end
