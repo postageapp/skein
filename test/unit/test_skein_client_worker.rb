@@ -24,8 +24,8 @@ class TestSkeinClientWorker < Test::Unit::TestCase
       response = JSON.load(response_json)
 
       expected = {
+        'jsonrpc' => '2.0',
         'result' => worker.ident,
-        'error' => nil,
         'id' => message[:id]
       }
 
@@ -47,8 +47,11 @@ class TestSkeinClientWorker < Test::Unit::TestCase
 
     handler.handle(JSON.dump(message)) do |response_json, error|
       expected = {
-        'result' => nil,
-        'error' => '[TestSkeinClientWorker::ErrorGenerator::CustomError] Example error!',
+        'jsonrpc' => '2.0',
+        'error' => {
+          'code' => -32063,
+          'message' => '[TestSkeinClientWorker::ErrorGenerator::CustomError] Example error!'
+        },
         'id' => message[:id]
       }
 

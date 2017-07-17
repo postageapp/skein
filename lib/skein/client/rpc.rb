@@ -2,6 +2,11 @@ require 'securerandom'
 require 'fiber'
 
 class Skein::Client::RPC < Skein::Connected
+  # == Exceptions ===========================================================
+
+  class RPCException < Exception
+  end
+
   # == Constants ============================================================
 
   EXCHANGE_NAME_DEFAULT = ''.freeze
@@ -29,11 +34,33 @@ class Skein::Client::RPC < Skein::Connected
         response = JSON.load(payload)
 
         if (callback = @callback.delete(response['id']))
-          case (callback)
-          when Queue
-            callback << response['result']
-          when Proc
-            callback.call
+          if (response['result'])
+            case (callback)
+            when Queue
+              callback << response['result']
+            when Proc
+              callback.call(response['result'])
+            end
+          else
+            exception =
+              case (response['error'] and response['error']['code'])
+              when -32601
+                NoMethodError.new(
+                  "undefined method `%s' for %s" % [
+                    response['error']['method'],
+                    self.inspect
+                  ]
+                )
+              else
+
+              end
+
+            case (callback)
+            when Queue
+              callback << exception
+            when Proc
+              callback.call(exception)
+            end
           end
         end
 
@@ -49,7 +76,7 @@ class Skein::Client::RPC < Skein::Connected
     super
   end
 
-  def method_missing(name, *args)
+  def method_missing(name, *args, &block)
     name = name.to_s
 
     blocking = !name.sub!(/!\z/, '')
@@ -73,20 +100,21 @@ class Skein::Client::RPC < Skein::Connected
     if (block_given?)
       @callback[message_id] =
         if (defined?(EventMachine))
-          EventMachine.next_tick do
-            yield
-          end
+          EventMachine.next_tick(&block)
         else
-          lambda do
-            yield
-          end
+          block
         end
     elsif (blocking)
       queue = Queue.new
 
       @callback[message_id] = queue
 
-      queue.pop
+      case (result = queue.pop)
+      when Exception
+        raise result
+      else
+        result
+      end
     end
   end
 end

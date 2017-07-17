@@ -73,12 +73,22 @@ class Skein::Handler
 
     begin
       delegate(request['method'], *request['params']) do |result, error = nil|
-        yield(JSON.dump(
-          jsonrpc: '2.0',
-          result: result,
-          error: error,
-          id: request['id']
-        ))
+        if (error)
+          yield(JSON.dump(
+            jsonrpc: '2.0',
+            error: {
+              code: -32603,
+              message: error
+            },
+            id: request['id']
+          ))
+        else
+          yield(JSON.dump(
+            jsonrpc: '2.0',
+            result: result,
+            id: request['id']
+          ))
+        end
       end
     rescue NoMethodError
       @context and @context.exception!(e, message_json)
@@ -87,7 +97,10 @@ class Skein::Handler
         jsonrpc: '2.0',
         error: {
           code: -32601,
-          message: 'Method not found'
+          message: 'Method not found',
+          data: {
+            method: request['method']
+          }
         },
         id: request['id']
       ))
