@@ -27,7 +27,12 @@ class Skein::Connected
   def channel
     @channel ||= begin
       channel = @connection.create_channel
-      channel.prefetch(0)
+
+      if (channel.respond_to?(:prefetch=))
+        channel.prefetch = 0
+      else
+        channel.prefetch(0)
+      end
 
       @channels << channel
 
