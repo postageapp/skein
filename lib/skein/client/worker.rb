@@ -76,7 +76,7 @@ class Skein::Client::Worker < Skein::Connected
         subscriber.gracefully_shut_down
       end
 
-      thread.kill
+      thread.respond_to?(:terminate!) ? thread.terminate! : thread.kill
       thread.join
     end
 
