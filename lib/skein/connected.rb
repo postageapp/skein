@@ -55,6 +55,8 @@ class Skein::Connected
           else
             raise e
           end
+        else
+          raise e
         end
       end
 

@@ -27,7 +27,7 @@ class Skein::Client::Worker < Skein::Connected
 
         sync = concurrency && Queue.new
 
-        Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
+        Thread.current[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
           self.before_request
 
           handler.handle(payload) do |reply_json|
@@ -71,6 +71,11 @@ class Skein::Client::Worker < Skein::Connected
 
   def close(delete_queue: false)
     @threads.each do |thread|
+      subscriber = thread[:subscriber]
+      if (subscriber.respond_to?(:gracefully_shut_down))
+        subscriber.gracefully_shut_down
+      end
+
       thread.kill
       thread.join
     end
