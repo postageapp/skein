@@ -44,7 +44,7 @@ class Skein::Connected
     lock do
       begin
         @channels.each do |channel|
-          channel.close
+          channel.open? and channel.close
         end
 
       rescue => e
@@ -61,7 +61,8 @@ class Skein::Connected
       end
 
       @channel = nil
-
+      @channels.clear
+      
       unless (@shared_connection)
         @connection and @connection.close
         @connection = nil

@@ -19,12 +19,18 @@ class Skein::Client::Subscriber < Skein::Connected
   def listen(block = true)
     case (@subscribe_queue.class.to_s.split(/::/)[0])
     when 'Bunny'
-      @subscribe_queue.subscribe(block: block) do |delivery_info, properties, payload|
-        yield(JSON.load(payload), delivery_info, properties)
+      begin
+        @subscribe_queue.subscribe(block: block) do |delivery_info, properties, payload|
+          yield(JSON.load(payload), delivery_info, properties)
+        end
       end
     when 'MarchHare'
-      @subscribe_queue.subscribe(block: block) do |metadata, payload|
-        yield(JSON.load(payload), metadata)
+      begin
+        @subscribe_queue.subscribe(block: block) do |metadata, payload|
+          yield(JSON.load(payload), metadata)
+        end
+      rescue MarchHare::ChannelAlreadyClosed
+        # Connection got killed outside of thread, so shut-down and move on
       end
     else
       raise "Unknown queue type #{@subscribe_queue.class}, cannot listen."
@@ -33,7 +39,16 @@ class Skein::Client::Subscriber < Skein::Connected
 
   def close(delete_queue: false)
     if (delete_queue)
-      @subscribe_queue.delete
+      begin
+        @subscribe_queue.delete
+      rescue => e
+        case (e.class.to_s)
+        when 'MarchHare::ChannelAlreadyClosed'
+          # Tried to delete, but this has already been shut down
+        else
+          raise e
+        end
+      end
     end
 
     super()

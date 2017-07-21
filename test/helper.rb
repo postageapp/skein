@@ -39,4 +39,33 @@ class Test::Unit::TestCase
   def data_path(name)
     File.expand_path(File.join('data', name), File.dirname(__FILE__))
   end
+
+  def wait_for(timeout = 1.0, message = nil)
+    sleep_interval = 0.001
+    start_time = Time.now
+
+    while ((Time.now - start_time) < timeout)
+      return if (yield)
+
+      sleep(sleep_interval)
+    end
+
+    fail(message || 'Timed out waiting for condition (%.1fms elapsed)' % [ (Time.now - start_time) * 1000 ])
+  end
+
+  def in_thread
+    Thread.new do
+      Thread.abort_on_exception = true
+
+      begin
+        yield
+
+      rescue => e
+        $stderr.puts("[%s] %s", [ e.class, e ])
+        $stderr.puts(e.backtrace.join("\n"))
+
+        raise e
+      end
+    end
+  end
 end
