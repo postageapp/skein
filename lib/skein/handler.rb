@@ -3,6 +3,12 @@ class Skein::Handler
 
   attr_reader :context
 
+  # == Constants ============================================================
+
+  RPC_BASE = {
+    jsonrpc: '2.0'
+  }.freeze
+
   # == Class Methods ========================================================
 
   def self.for(target)
@@ -21,6 +27,10 @@ class Skein::Handler
     @context = context
   end
 
+  def json_rpc(contents)
+    JSON.dump(RPC_BASE.merge(contents))
+  end
+
   def handle(message_json)
     request =
       begin
@@ -29,9 +39,11 @@ class Skein::Handler
       rescue Object => e
         @context and @context.exception!(e, message_json)
 
-        return yield(JSON.dump(
-          result: nil,
-          error: '[%s] %s' % [ e.class, e ],
+        return yield(rpc_json(
+          error: {
+            code: -32700,
+            message: 'Parse error'
+          },
           id: nil
         ))
       end
@@ -40,8 +52,7 @@ class Skein::Handler
     when Hash
       # Acceptable
     else
-      return yield(JSON.dump(
-        jsonrpc: '2.0',
+      return yield(json_rpc(
         error: {
           code: -32600,
           message: 'Request does not conform to the JSON-RPC format.'
@@ -61,8 +72,7 @@ class Skein::Handler
       end
 
     unless (request['method'] and request['method'].is_a?(String) and request['method'].match(/\S/))
-      return yield(JSON.dump(
-        jsonrpc: '2.0',
+      return yield(json_rpc(
         error: {
           code: -32600,
           message: 'Request does not conform to the JSON-RPC format, missing valid method.'
@@ -74,8 +84,7 @@ class Skein::Handler
     begin
       delegate(request['method'], *request['params']) do |result, error = nil|
         if (error)
-          yield(JSON.dump(
-            jsonrpc: '2.0',
+          yield(json_rpc(
             error: {
               code: -32603,
               message: error
@@ -83,18 +92,34 @@ class Skein::Handler
             id: request['id']
           ))
         else
-          yield(JSON.dump(
-            jsonrpc: '2.0',
+          yield(json_rpc(
             result: result,
             id: request['id']
           ))
         end
       end
-    rescue NoMethodError
+
+    rescue ArgumentError => e
+      # REFACTOR: Make these exception catchers only trap immediate errors,
+      #           not those that occur within the delegated code.
       @context and @context.exception!(e, message_json)
 
-      yield(JSON.dump(
-        jsonrpc: '2.0',
+      yield(json_rpc(
+        error: {
+          code: -32602,
+          message: 'Invalid params',
+          data: {
+            method: request['method'],
+            params: request['params'],
+            message: e.to_s
+          }
+        },
+        id: request['id']
+      ))
+    rescue NoMethodError => e
+      @context and @context.exception!(e, message_json)
+
+      yield(json_rpc(
         error: {
           code: -32601,
           message: 'Method not found',
@@ -107,8 +132,7 @@ class Skein::Handler
     rescue Object => e
       @context and @context.exception!(e, message_json)
 
-      yield(JSON.dump(
-        jsonrpc: '2.0',
+      yield(json_rpc(
         error: {
           code: -32063, 
           message: '[%s] %s' % [ e.class, e ]

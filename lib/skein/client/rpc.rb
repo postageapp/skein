@@ -51,8 +51,10 @@ class Skein::Client::RPC < Skein::Connected
                     self.inspect
                   ]
                 )
-              else
-
+              when -32602
+                ArgumentError.new(
+                  response.dig('error', 'data', 'message') || 'wrong number of arguments'
+                )
               end
 
             case (callback)
