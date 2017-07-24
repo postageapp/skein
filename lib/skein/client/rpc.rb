@@ -32,7 +32,6 @@ class Skein::Client::RPC < Skein::Connected
     @consumer = Skein::Adapter.subscribe(@response_queue, block: false) do |payload, delivery_tag, reply_to|
       self.context.trap do
         response = JSON.load(payload)
-        p response
 
         if (callback = @callback.delete(response['id']))
           if (response['error'])
