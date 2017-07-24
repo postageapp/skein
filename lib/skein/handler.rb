@@ -28,7 +28,8 @@ class Skein::Handler
   end
 
   def json_rpc(contents)
-    JSON.dump(RPC_BASE.merge(contents))
+    p contents
+    JSON.dump(RPC_BASE.merge(contents)).tap{ |v| puts v }
   end
 
   def handle(message_json)
@@ -82,12 +83,13 @@ class Skein::Handler
     end
 
     begin
-      delegate(request['method'], *request['params']) do |result, error = nil|
-        if (error)
+      delegate(request['method'], *request['params']) do |result|
+        case (result)
+        when Exception
           yield(json_rpc(
             error: {
               code: -32603,
-              message: error
+              message: result.to_s
             },
             id: request['id']
           ))
