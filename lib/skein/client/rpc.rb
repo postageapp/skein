@@ -55,6 +55,10 @@ class Skein::Client::RPC < Skein::Connected
                 ArgumentError.new(
                   response.dig('error', 'data', 'message') || 'wrong number of arguments'
                 )
+              else
+                RPCException.new(
+                  response.dig('error', 'data', 'message') || response.dig('error', 'message') 
+                )
               end
 
             case (callback)
