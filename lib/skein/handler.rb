@@ -28,8 +28,7 @@ class Skein::Handler
   end
 
   def json_rpc(contents)
-    p contents
-    JSON.dump(RPC_BASE.merge(contents)).tap{ |v| puts v }
+    JSON.dump(RPC_BASE.merge(contents))
   end
 
   def handle(message_json)
