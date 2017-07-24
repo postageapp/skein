@@ -32,16 +32,10 @@ class Skein::Client::RPC < Skein::Connected
     @consumer = Skein::Adapter.subscribe(@response_queue, block: false) do |payload, delivery_tag, reply_to|
       self.context.trap do
         response = JSON.load(payload)
+        p response
 
         if (callback = @callback.delete(response['id']))
-          if (response['result'])
-            case (callback)
-            when Queue
-              callback << response['result']
-            when Proc
-              callback.call(response['result'])
-            end
-          else
+          if (response['error'])
             exception =
               case (response['error'] and response['error']['code'])
               when -32601
@@ -66,6 +60,13 @@ class Skein::Client::RPC < Skein::Connected
               callback << exception
             when Proc
               callback.call(exception)
+            end
+          else
+            case (callback)
+            when Queue
+              callback << response['result']
+            when Proc
+              callback.call(response['result'])
             end
           end
         end
