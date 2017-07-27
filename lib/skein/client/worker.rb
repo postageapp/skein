@@ -6,6 +6,7 @@ class Skein::Client::Worker < Skein::Connected
   def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil, auto_delete: false, routing_key: nil)
     super(connection: connection, context: context)
 
+    @exchange_name = exchange_name
     @queue_name = queue_name
     concurrency &&= concurrency.to_i
     @threads = [ ]
