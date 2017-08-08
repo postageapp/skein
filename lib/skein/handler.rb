@@ -24,7 +24,7 @@ class Skein::Handler
 
   def initialize(target, context = nil)
     @target = target
-    @context = context
+    @context = context || target.context
   end
 
   def json_rpc(contents)

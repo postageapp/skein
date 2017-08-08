@@ -75,6 +75,16 @@ class Skein::Client::RPC < Skein::Connected
     end
   end
 
+  # Temporarily deliver RPC calls to a different routing key. The supplied
+  # block is executed with this temporary routing in effect.
+  def reroute!(routing_key)
+    routing_key, @routing_key = @routing_key, routing_key
+
+    yield if (block_given?)
+
+    @routing_key = routing_key
+  end
+
   def close
     @consumer and @consumer.cancel
     @consumer = nil
