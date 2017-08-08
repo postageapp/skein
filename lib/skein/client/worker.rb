@@ -29,22 +29,26 @@ class Skein::Client::Worker < Skein::Connected
         sync = concurrency && Queue.new
 
         Thread.current[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
-          self.before_request
+          self.context.trap do
+            self.before_request
 
-          handler.handle(payload) do |reply_json|
-            channel.acknowledge(delivery_tag, true)
+            handler.handle(payload) do |reply_json|
+              self.context.trap do
+                channel.acknowledge(delivery_tag, true)
 
-            if (reply_to)
-              channel.default_exchange.publish(
-                reply_json,
-                routing_key: reply_to,
-                content_type: 'application/json'
-              )
+                if (reply_to)
+                  channel.default_exchange.publish(
+                    reply_json,
+                    routing_key: reply_to,
+                    content_type: 'application/json'
+                  )
+                end
+
+                self.after_request
+              end
+
+              sync and sync << nil
             end
-
-            self.after_request
-
-            sync and sync << nil
           end
 
           sync and sync.pop

@@ -38,7 +38,7 @@ class Skein::Context
 
   def trap
     yield
-  rescue => e
+  rescue Object => e
     self.exception!(e)
   end
 end
