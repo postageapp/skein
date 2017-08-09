@@ -12,7 +12,7 @@ class TestSkeinClientWorker < Test::Unit::TestCase
 
   def test_example
     worker = Skein::Client::Worker.new('test_rpc')
-    handler = Skein::Handler.for(worker)
+    handler = worker.send(:handler)
 
     message = {
       method: 'ident',
@@ -20,7 +20,10 @@ class TestSkeinClientWorker < Test::Unit::TestCase
       id: '43d8352c-4907-4c32-9c81-fc34e91a3884'
     }
 
-    handler.handle(JSON.dump(message)) do |response_json, error|
+    metrics = worker.send(:metrics_tracker)
+    state = worker.send(:state_tracker)
+
+    handler.handle(JSON.dump(message), metrics, state) do |response_json, error|
       response = JSON.load(response_json)
 
       expected = {
@@ -45,7 +48,10 @@ class TestSkeinClientWorker < Test::Unit::TestCase
       id: '29fe8a40-fccf-43c6-ba48-818598c66e6f'
     }
 
-    handler.handle(JSON.dump(message)) do |response_json, error|
+    metrics = worker.send(:metrics_tracker)
+    state = worker.send(:state_tracker)
+
+    handler.handle(JSON.dump(message), metrics, state) do |response_json, error|
       expected = {
         'jsonrpc' => '2.0',
         'error' => {
@@ -56,6 +62,9 @@ class TestSkeinClientWorker < Test::Unit::TestCase
       }
 
       assert_equal(expected.to_json, response_json)
+
+      assert_equal(1, metrics[:failed])
+      assert_equal(1, metrics[:errors][:exception])
     end
 
   ensure

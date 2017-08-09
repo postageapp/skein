@@ -1,6 +1,9 @@
 module Skein::Adapter
   # == Mixin Methods =========================================================
   
+  # REFACTOR: This should be converted into a proper subclass of the
+  #           various drivers that does the method re-writing at a lower level.
+  
   def subscribe(queue, block: true, manual_ack: true)
     case (queue.class.to_s.split(/::/)[0])
     when 'Bunny'

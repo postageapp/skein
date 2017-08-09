@@ -1,6 +1,8 @@
 require 'json'
 
 class Skein::Client::Worker < Skein::Connected
+  # == Class Methods ========================================================
+
   # == Instance Methods =====================================================
 
   def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil, auto_delete: false, routing_key: nil)
@@ -9,11 +11,11 @@ class Skein::Client::Worker < Skein::Connected
     @exchange_name = exchange_name
     @queue_name = queue_name
     concurrency &&= concurrency.to_i
-    @threads = [ ]
+    @operations = [ ]
     @durable = durable.nil? ? !!@queue_name.match(/\S/) : !!durable
 
     (concurrency || 1).times do |i|
-      with_channel_in_thread do |channel|
+      with_channel_in_thread do |channel, meta|
         queue = channel.queue(
           @queue_name,
           durable: @durable,
@@ -28,11 +30,11 @@ class Skein::Client::Worker < Skein::Connected
 
         sync = concurrency && Queue.new
 
-        Thread.current[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
+        meta[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
           self.context.trap do
             self.before_request
 
-            handler.handle(payload) do |reply_json|
+            handler.handle(payload, meta[:metrics], meta[:state]) do |reply_json|
               self.context.trap do
                 channel.acknowledge(delivery_tag, true)
 
@@ -59,27 +61,40 @@ class Skein::Client::Worker < Skein::Connected
     self.after_initialize
   end
 
-  # Extend this in derived classes to implement any desired customization to
-  # be performed after initialization
+  # Define in derived classes to implement any desired customization to be
+  # performed after initialization.
   def after_initialize
   end
 
-  # Extend this in derived classes to implement any behaviour that should be
-  # triggered prior to handling a request.
+  # Define in derived classes. Willl be called immediately after a request is
+  # received but before any processing occurs.
   def before_request
   end
 
-  # Extend this in derived classes to implement any behaviour that should be
-  # triggered  after handling a request, even if an error occurred.
+  # Define in derived classes. Will be called immediately prior to executing
+  # the worker method.
+  def before_execution(method_name)
+  end
+
+  # Define in derived classes. Will be called immediately after executing the
+  # worker method.
+  def after_execution(method_name)
+  end
+
+  # Define in derived classes. Will be called immediately after handling an
+  # RPC call even if an error has occured.
   def after_request
   end
 
   def close(delete_queue: false)
-    @threads.each do |thread|
-      subscriber = thread[:subscriber]
+    @operations.each do |meta|
+      subscriber = meta[:subscriber]
+
       if (subscriber.respond_to?(:gracefully_shut_down))
         subscriber.gracefully_shut_down
       end
+
+      thread = meta[:thread]
 
       thread.respond_to?(:terminate!) ? thread.terminate! : thread.kill
       thread.join
@@ -99,8 +114,8 @@ class Skein::Client::Worker < Skein::Connected
   end
 
   def join
-    @threads.each do |thread|
-      thread.join
+    @operations.each do |meta|
+      meta[:thread].join
     end
   end
 
@@ -110,23 +125,53 @@ class Skein::Client::Worker < Skein::Connected
     false
   end
 
-protected
-  def in_thread
-    @threads << Thread.new do
-      Thread.abort_on_exception = true
+  # Signal that the current operation should be abandoned and retried later.
+  def force_retry!
+    # ...!
+  end
 
-      yield
-    end
+protected
+  def state_tracker
+    {
+      method: nil,
+      start: nil,
+      finish: nil
+    }
+  end
+
+  def metrics_tracker
+    Hash.new(0).merge(
+      time: 0.0,
+      errors: Hash.new(0)
+    )
+  end
+
+  def in_thread
+    @operations << {
+      thread: Thread.new do
+        Thread.abort_on_exception = true
+
+        yield
+      end
+    }
   end
 
   def with_channel_in_thread
     thread_channel = @connection.create_channel
 
-    @threads << Thread.new do
+    meta = {
+      metrics: metrics_tracker,
+      state: state_tracker
+    }
+
+    @operations << meta
+
+    meta[:thread] = Thread.new do
       Thread.abort_on_exception = true
 
       begin
-        yield(thread_channel)
+        yield(thread_channel, meta)
+
       ensure
         # NOTE: The `.close` call may fail for a variety of reasons, but the
         #       important thing here is an attempt is made, regardless of

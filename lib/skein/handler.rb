@@ -31,13 +31,19 @@ class Skein::Handler
     JSON.dump(RPC_BASE.merge(contents))
   end
 
-  def handle(message_json)
+  def handle(message_json, metrics, state)
+    state[:started] = Time.now
+
     request =
       begin
         JSON.load(message_json)
 
       rescue Object => e
         @context and @context.exception!(e, message_json)
+
+        metrics[:failed] += 1
+        metrics[:errors][:parsing] += 1
+        metrics[:time] += state[:started] - state[:finished]
 
         return yield(rpc_json(
           error: {
@@ -52,6 +58,10 @@ class Skein::Handler
     when Hash
       # Acceptable
     else
+      metrics[:failed] += 1
+      metrics[:errors][:non_jsonrpc] += 1
+      metrics[:time] += state[:started] - state[:finished]
+
       return yield(json_rpc(
         error: {
           code: -32600,
@@ -72,6 +82,10 @@ class Skein::Handler
       end
 
     unless (request['method'] and request['method'].is_a?(String) and request['method'].match(/\S/))
+      metrics[:failed] += 1
+      metrics[:errors][:no_method_property] += 1
+      metrics[:time] += state[:started] - state[:finished]
+
       return yield(json_rpc(
         error: {
           code: -32600,
@@ -82,9 +96,20 @@ class Skein::Handler
     end
 
     begin
-      delegate(request['method'], *request['params']) do |result|
+      method_name = request['method']
+      @target.before_execution(method_name)
+      state[:method] = method_name
+
+      delegate(method_name, *request['params']) do |result|
+        @target.after_execution(method_name)
+        state[:finished] = Time.now
+        metrics[:time] += state[:started] - state[:finished]
+
         case (result)
         when Exception
+          metrics[:failed] += 1
+          metrics[:errors][:exception] += 1
+
           yield(json_rpc(
             error: {
               code: -32603,
@@ -93,6 +118,8 @@ class Skein::Handler
             id: request['id']
           ))
         else
+          metrics[:succeeded] += 1
+
           yield(json_rpc(
             result: result,
             id: request['id']
@@ -104,6 +131,11 @@ class Skein::Handler
       # REFACTOR: Make these exception catchers only trap immediate errors,
       #           not those that occur within the delegated code.
       @context and @context.exception!(e, message_json)
+
+      metrics[:failed] += 1
+      metrics[:errors][:invalid_arguments] += 1
+      state[:finished] = Time.now
+      metrics[:time] += state[:started] - state[:finished]
 
       yield(json_rpc(
         error: {
@@ -120,6 +152,11 @@ class Skein::Handler
     rescue NoMethodError => e
       @context and @context.exception!(e, message_json)
 
+      metrics[:failed] += 1
+      metrics[:errors][:invalid_arguments] += 1
+      state[:finished] = Time.now
+      metrics[:time] += state[:started] - state[:finished]
+
       yield(json_rpc(
         error: {
           code: -32601,
@@ -132,6 +169,11 @@ class Skein::Handler
       ))
     rescue Object => e
       @context and @context.exception!(e, message_json)
+
+      metrics[:failed] += 1
+      metrics[:errors][:exception] += 1
+      state[:finished] = Time.now
+      metrics[:time] += state[:started] - state[:finished]
 
       yield(json_rpc(
         error: {
