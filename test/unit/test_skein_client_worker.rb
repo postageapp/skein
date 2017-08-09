@@ -11,7 +11,7 @@ class TestSkeinClientWorker < Test::Unit::TestCase
   end
 
   def test_example
-    worker = Skein::Client::Worker.new('test_rpc')
+    worker = ErrorGenerator.new('test_rpc')
     handler = worker.send(:handler)
 
     message = {

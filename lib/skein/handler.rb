@@ -96,7 +96,7 @@ class Skein::Handler
     end
 
     begin
-      method_name = request['method']
+      method_name = request['method'].to_sym
       @target.before_execution(method_name)
       state[:method] = method_name
 

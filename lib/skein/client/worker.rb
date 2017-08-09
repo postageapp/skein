@@ -1,6 +1,10 @@
 require 'json'
 
 class Skein::Client::Worker < Skein::Connected
+  # == Properties ===========================================================
+
+  attr_reader :operations
+
   # == Class Methods ========================================================
 
   # == Instance Methods =====================================================
