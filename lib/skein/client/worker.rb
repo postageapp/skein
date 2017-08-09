@@ -32,8 +32,6 @@ class Skein::Client::Worker < Skein::Connected
           queue.bind(exchange, routing_key: routing_key || @queue_name)
         end
 
-        sync = concurrency && Queue.new
-
         meta[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
           self.context.trap do
             self.before_request
@@ -52,12 +50,8 @@ class Skein::Client::Worker < Skein::Connected
 
                 self.after_request
               end
-
-              sync and sync << nil
             end
           end
-
-          sync and sync.pop
         end
       end
     end

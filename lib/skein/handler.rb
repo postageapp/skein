@@ -33,6 +33,7 @@ class Skein::Handler
 
   def handle(message_json, metrics, state)
     state[:started] = Time.now
+    state[:thread] = Thread.current
 
     request =
       begin

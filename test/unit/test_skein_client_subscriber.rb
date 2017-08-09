@@ -17,9 +17,7 @@ class TestSkeinClientSubscriber < Test::Unit::TestCase
       end
     end
 
-    while (!subscribing)
-      # Spin-lock to wait for the subscriber to come online
-    end
+    wait_for { subscribing }
 
   ensure
     subscriber and subscriber.close(delete_queue: true)
