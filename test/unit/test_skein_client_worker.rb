@@ -65,6 +65,7 @@ class TestSkeinClientWorker < Test::Unit::TestCase
 
       assert_equal(1, metrics[:failed])
       assert_equal(1, metrics[:errors][:exception])
+      assert(metrics[:time] >= 0, 'Time (%.3f) should be positive' % metrics[:time])
     end
 
   ensure

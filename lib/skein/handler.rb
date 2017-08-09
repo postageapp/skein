@@ -43,7 +43,7 @@ class Skein::Handler
 
         metrics[:failed] += 1
         metrics[:errors][:parsing] += 1
-        metrics[:time] += state[:started] - state[:finished]
+        metrics[:time] += state[:finished] - state[:started]
 
         return yield(rpc_json(
           error: {
@@ -60,7 +60,7 @@ class Skein::Handler
     else
       metrics[:failed] += 1
       metrics[:errors][:non_jsonrpc] += 1
-      metrics[:time] += state[:started] - state[:finished]
+      metrics[:time] += state[:finished] - state[:started]
 
       return yield(json_rpc(
         error: {
@@ -84,7 +84,7 @@ class Skein::Handler
     unless (request['method'] and request['method'].is_a?(String) and request['method'].match(/\S/))
       metrics[:failed] += 1
       metrics[:errors][:no_method_property] += 1
-      metrics[:time] += state[:started] - state[:finished]
+      metrics[:time] += state[:finished] - state[:started]
 
       return yield(json_rpc(
         error: {
@@ -103,7 +103,7 @@ class Skein::Handler
       delegate(method_name, *request['params']) do |result|
         @target.after_execution(method_name)
         state[:finished] = Time.now
-        metrics[:time] += state[:started] - state[:finished]
+        metrics[:time] += state[:finished] - state[:started]
 
         case (result)
         when Exception
@@ -135,7 +135,7 @@ class Skein::Handler
       metrics[:failed] += 1
       metrics[:errors][:invalid_arguments] += 1
       state[:finished] = Time.now
-      metrics[:time] += state[:started] - state[:finished]
+      metrics[:time] += state[:finished] - state[:started]
 
       yield(json_rpc(
         error: {
@@ -155,7 +155,7 @@ class Skein::Handler
       metrics[:failed] += 1
       metrics[:errors][:invalid_arguments] += 1
       state[:finished] = Time.now
-      metrics[:time] += state[:started] - state[:finished]
+      metrics[:time] += state[:finished] - state[:started]
 
       yield(json_rpc(
         error: {
@@ -173,7 +173,7 @@ class Skein::Handler
       metrics[:failed] += 1
       metrics[:errors][:exception] += 1
       state[:finished] = Time.now
-      metrics[:time] += state[:started] - state[:finished]
+      metrics[:time] += state[:finished] - state[:started]
 
       yield(json_rpc(
         error: {
