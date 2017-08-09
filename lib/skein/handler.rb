@@ -33,7 +33,9 @@ class Skein::Handler
 
   def handle(message_json, metrics, state)
     state[:started] = Time.now
+    state[:finished] = nil
     state[:thread] = Thread.current
+    state[:method] = :handle
 
     request =
       begin
@@ -45,6 +47,7 @@ class Skein::Handler
         metrics[:failed] += 1
         metrics[:errors][:parsing] += 1
         metrics[:time] += state[:finished] - state[:started]
+        state[:method] = nil
 
         return yield(rpc_json(
           error: {
@@ -62,6 +65,7 @@ class Skein::Handler
       metrics[:failed] += 1
       metrics[:errors][:non_jsonrpc] += 1
       metrics[:time] += state[:finished] - state[:started]
+      state[:method] = nil
 
       return yield(json_rpc(
         error: {
@@ -86,6 +90,7 @@ class Skein::Handler
       metrics[:failed] += 1
       metrics[:errors][:no_method_property] += 1
       metrics[:time] += state[:finished] - state[:started]
+      state[:method] = nil
 
       return yield(json_rpc(
         error: {
@@ -105,6 +110,7 @@ class Skein::Handler
         @target.after_execution(method_name)
         state[:finished] = Time.now
         metrics[:time] += state[:finished] - state[:started]
+        state[:method] = nil
 
         case (result)
         when Exception
@@ -137,6 +143,7 @@ class Skein::Handler
       metrics[:errors][:invalid_arguments] += 1
       state[:finished] = Time.now
       metrics[:time] += state[:finished] - state[:started]
+      state[:method] = nil
 
       yield(json_rpc(
         error: {
@@ -157,6 +164,7 @@ class Skein::Handler
       metrics[:errors][:invalid_arguments] += 1
       state[:finished] = Time.now
       metrics[:time] += state[:finished] - state[:started]
+      state[:method] = nil
 
       yield(json_rpc(
         error: {
@@ -175,6 +183,7 @@ class Skein::Handler
       metrics[:errors][:exception] += 1
       state[:finished] = Time.now
       metrics[:time] += state[:finished] - state[:started]
+      state[:method] = nil
 
       yield(json_rpc(
         error: {

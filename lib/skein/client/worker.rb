@@ -155,7 +155,7 @@ protected
   end
 
   def with_channel_in_thread
-    thread_channel = @connection.create_channel
+    thread_channel = self.create_channel
 
     meta = {
       metrics: metrics_tracker,

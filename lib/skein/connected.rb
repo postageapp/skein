@@ -24,20 +24,22 @@ class Skein::Connected
     end
   end
 
-  def channel
-    @channel ||= begin
-      channel = @connection.create_channel
+  def create_channel
+    channel = @connection.create_channel
 
-      if (channel.respond_to?(:prefetch=))
-        channel.prefetch = 0
-      else
-        channel.prefetch(0)
-      end
-
-      @channels << channel
-
-      channel
+    if (channel.respond_to?(:prefetch=))
+      channel.prefetch = 1
+    else
+      channel.prefetch(1)
     end
+
+    @channels << channel
+
+    channel
+  end
+
+  def channel
+    @channel ||= self.create_channel
   end
 
   def close
