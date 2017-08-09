@@ -138,8 +138,8 @@ protected
   def state_tracker
     {
       method: nil,
-      start: nil,
-      finish: nil
+      started: nil,
+      finished: nil
     }
   end
 
