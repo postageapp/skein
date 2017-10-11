@@ -5,6 +5,14 @@ class Skein::Client::Worker < Skein::Connected
 
   attr_reader :operations
 
+  # == Exceptions ===========================================================
+
+  class RejectMessage < Exception
+  end
+
+  class RetryMessage < Exception
+  end
+
   # == Class Methods ========================================================
 
   # == Instance Methods =====================================================
@@ -38,17 +46,25 @@ class Skein::Client::Worker < Skein::Connected
 
             handler.handle(payload, meta[:metrics], meta[:state]) do |reply_json|
               self.context.trap do
-                channel.acknowledge(delivery_tag, true)
+                begin
+                  channel.acknowledge(delivery_tag, true)
 
-                if (reply_to)
-                  channel.default_exchange.publish(
-                    reply_json,
-                    routing_key: reply_to,
-                    content_type: 'application/json'
-                  )
+                  if (reply_to)
+                    channel.default_exchange.publish(
+                      reply_json,
+                      routing_key: reply_to,
+                      content_type: 'application/json'
+                    )
+                  end
+                rescue RejectMessage
+                  # Reject the message
+                  channel.reject(delivery_tag, false)
+                rescue RetryMessage
+                  # Reject and requeue the message
+                  channel.reject(delivery_tag, true)
+                ensure
+                  self.after_request
                 end
-
-                self.after_request
               end
             end
           end
@@ -123,9 +139,14 @@ class Skein::Client::Worker < Skein::Connected
     false
   end
 
+  # Signal that the current operation should be abandoned and not retried.
+  def reject!
+    raise RejectMessage
+  end
+
   # Signal that the current operation should be abandoned and retried later.
-  def force_retry!
-    # ...!
+  def retry!
+    raise RetryMessage
   end
 
 protected
