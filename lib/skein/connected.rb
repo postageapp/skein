@@ -7,7 +7,7 @@ class Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(connection: nil, context: nil)
+  def initialize(connection: nil, context: nil, ident: nil)
     @mutex = Mutex.new
     @shared_connection = !!connection
 
@@ -15,7 +15,7 @@ class Skein::Connected
     @channels = [ ]
 
     @context = context || Skein::Context.new
-    @ident = @context.ident(self)
+    @ident = ident || @context.ident(self)
   end
 
   def lock

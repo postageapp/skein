@@ -15,8 +15,8 @@ class Skein::Client::RPC < Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil)
-    super(connection: connection, context: context)
+  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil, ident: nil)
+    super(connection: connection, context: context, ident: ident)
 
     @rpc_exchange = self.channel.direct(exchange_name || EXCHANGE_NAME_DEFAULT, durable: true)
     @routing_key = routing_key

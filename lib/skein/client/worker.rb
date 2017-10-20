@@ -17,8 +17,8 @@ class Skein::Client::Worker < Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil, auto_delete: false, routing_key: nil)
-    super(connection: connection, context: context)
+  def initialize(queue_name, exchange_name: nil, connection: nil, context: nil, concurrency: nil, durable: nil, auto_delete: false, routing_key: nil, ident: nil)
+    super(connection: connection, context: context, ident: ident)
 
     @exchange_name = exchange_name
     @queue_name = queue_name
