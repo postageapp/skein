@@ -15,7 +15,7 @@ class Skein::Client::RPC < Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil, ident: nil)
+  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil, ident: nil, expiration: nil, persistent: true)
     super(connection: connection, context: context, ident: ident)
 
     @rpc_exchange = self.channel.direct(exchange_name || EXCHANGE_NAME_DEFAULT, durable: true)
@@ -26,6 +26,8 @@ class Skein::Client::RPC < Skein::Connected
       header: true,
       auto_delete: true
     )
+    @expiration = expiration
+    @persistent = !!persistent
 
     @callback = { }
 
@@ -110,7 +112,9 @@ class Skein::Client::RPC < Skein::Connected
       routing_key: @routing_key,
       reply_to: blocking ? @ident : nil,
       content_type: 'application/json',
-      message_id: message_id
+      message_id: message_id,
+      persistent: @persistent,
+      expiration: @expiration
     )
 
     if (block_given?)
