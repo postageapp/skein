@@ -34,7 +34,7 @@ class Skein::Client::Worker < Skein::Connected
           auto_delete: auto_delete
         )
 
-        if (exchange_name and exchange_name.match(/S/))
+        if (exchange_name and exchange_name.match(/\S/))
           exchange = channel.direct(exchange_name, durable: true)
 
           queue.bind(exchange, routing_key: routing_key || @queue_name)
