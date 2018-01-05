@@ -38,6 +38,8 @@ class Skein::Context
 
   def trap
     yield
+  rescue SystemExit
+    raise
   rescue Object => e
     self.exception!(e)
   end
