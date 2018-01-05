@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'birling'
+gem 'birling', '>= 0.2.0'
 
 group :development, :test do
   gem 'bunny', platforms: :ruby
