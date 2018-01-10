@@ -15,11 +15,16 @@ class Skein::Client::RPC < Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil, ident: nil, expiration: nil, persistent: true)
+  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil, ident: nil, expiration: nil, persistent: true, durable: true)
     super(connection: connection, context: context, ident: ident)
 
-    @rpc_exchange = self.channel.direct(exchange_name || EXCHANGE_NAME_DEFAULT, durable: true)
     @routing_key = routing_key
+
+    @rpc_exchange = self.channel.direct(
+      exchange_name || EXCHANGE_NAME_DEFAULT,
+      durable: durable
+    )
+
     @response_queue = self.channel.queue(
       @ident,
       durable: false,

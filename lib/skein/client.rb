@@ -28,7 +28,7 @@ class Skein::Client < Skein::Connected
     super(connection: connection, context: context)
   end
 
-  def rpc(exchange_name = nil, routing_key: nil, ident: nil, expiration: nil, persistent: nil)
+  def rpc(exchange_name = nil, routing_key: nil, ident: nil, expiration: nil, persistent: nil, durable: nil)
     Skein::Client::RPC.new(
       exchange_name,
       routing_key: routing_key,
@@ -36,16 +36,18 @@ class Skein::Client < Skein::Connected
       context: self.context,
       ident: ident,
       expiration: expiration,
-      persistent: persistent
+      persistent: persistent,
+      durable: durable
     )
   end
 
-  def worker(queue_name, type = nil, ident: nil)
+  def worker(queue_name, type = nil, ident: nil, durable: nil)
     (type || Skein::Client::Worker).new(
       queue_name,
       connection: self.connection,
       context: self.context,
-      ident: ident
+      ident: ident,
+      durable
     )
   end
 
