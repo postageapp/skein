@@ -47,7 +47,7 @@ class Skein::Client < Skein::Connected
       connection: self.connection,
       context: self.context,
       ident: ident,
-      durable
+      durable: durable
     )
   end
 
