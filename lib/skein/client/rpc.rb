@@ -15,10 +15,11 @@ class Skein::Client::RPC < Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil, ident: nil, expiration: nil, persistent: true, durable: true)
+  def initialize(exchange_name = nil, routing_key: nil, connection: nil, context: nil, ident: nil, expiration: nil, persistent: true, durable: true, timeout: nil)
     super(connection: connection, context: context, ident: ident)
 
     @routing_key = routing_key
+    @timeout = timeout
 
     @rpc_exchange = self.channel.direct(
       exchange_name || EXCHANGE_NAME_DEFAULT,
@@ -134,7 +135,7 @@ class Skein::Client::RPC < Skein::Connected
 
       @callback[message_id] = queue
 
-      case (result = queue.pop(true, 10))
+      case (result = queue.pop(true, @timeout))
       when Exception
         raise result
       else

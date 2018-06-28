@@ -1,25 +1,9 @@
 class Skein::TimeoutQueue
-  # == Constants ============================================================
-
-  # == Properties ===========================================================
-
-  # == Extensions ===========================================================
-
-  # == Relationships ========================================================
-
-  # == Validations ==========================================================
-
-  # == Callbacks ============================================================
-
-  # == Scopes ===============================================================
-
-  # == Class Methods ========================================================
-
   # == Instance Methods =====================================================
 
   def initialize
     @elems = []
-    @mutex = Mutext.new
+    @mutex = Mutex.new
     @cond_var = ConditionVariable.new
   end
 
@@ -45,7 +29,10 @@ class Skein::TimeoutQueue
         end
       end
 
-      raise ThreadError, 'queue empty' if @elems.empty?
+      if (@elems.empty?)
+        raise ThreadError, 'Queue Empty: Time Out'
+      end
+
       @elems.shift
     end
   end

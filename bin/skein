@@ -136,7 +136,7 @@ when 'echo'
 
     tabulator = Thread.new do
       loop do
-        v = results.pop(true, 10)
+        v = results.pop
 
         break if (v.nil?)
 
