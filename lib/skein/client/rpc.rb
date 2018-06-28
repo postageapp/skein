@@ -46,7 +46,7 @@ class Skein::Client::RPC < Skein::Connected
               case (response['error'] and response['error']['code'])
               when -32601
                 NoMethodError.new(
-                  "undefined method `%s' for %s" % [
+                  "undefined method '%s' for %s" % [
                     response['error']['method'],
                     self.inspect
                   ]
@@ -57,7 +57,7 @@ class Skein::Client::RPC < Skein::Connected
                 )
               else
                 RPCException.new(
-                  response.dig('error', 'data', 'message') || response.dig('error', 'message') 
+                  response.dig('error', 'data', 'message') || response.dig('error', 'message')
                 )
               end
 
@@ -130,11 +130,11 @@ class Skein::Client::RPC < Skein::Connected
           block
         end
     elsif (blocking)
-      queue = Queue.new
+      queue = Skein::TimeoutQueue.new
 
       @callback[message_id] = queue
 
-      case (result = queue.pop)
+      case (result = queue.pop(true, 10))
       when Exception
         raise result
       else

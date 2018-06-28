@@ -128,7 +128,7 @@ when 'subscribe'
   end
 when 'echo'
   rescue_safely(options) do
-    results = Queue.new
+    results = TimeoutQueue.new
 
     start = Time.now
 
@@ -136,7 +136,7 @@ when 'echo'
 
     tabulator = Thread.new do
       loop do
-        v = results.pop
+        v = results.pop(true, 10)
 
         break if (v.nil?)
 

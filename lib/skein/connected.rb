@@ -64,7 +64,7 @@ class Skein::Connected
 
       @channel = nil
       @channels.clear
-      
+
       unless (@shared_connection)
         @connection and @connection.close
         @connection = nil
