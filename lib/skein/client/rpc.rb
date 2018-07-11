@@ -63,14 +63,14 @@ class Skein::Client::RPC < Skein::Connected
               end
 
             case (callback)
-            when Queue
+            when Skein::TimeoutQueue
               callback << exception
             when Proc
               callback.call(exception)
             end
           else
             case (callback)
-            when Queue
+            when Skein::TimeoutQueue
               callback << response['result']
             when Proc
               callback.call(response['result'])
