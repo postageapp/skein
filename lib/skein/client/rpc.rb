@@ -131,11 +131,11 @@ class Skein::Client::RPC < Skein::Connected
           block
         end
     elsif (blocking)
-      queue = Skein::TimeoutQueue.new
+      queue = Skein::TimeoutQueue.new(blocking: true, timeout: @timeout)
 
       @callback[message_id] = queue
 
-      case (result = queue.pop(true, @timeout))
+      case (result = queue.pop)
       when Exception
         raise result
       else
