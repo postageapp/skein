@@ -18,6 +18,7 @@ class Skein::TimeoutQueue
   end
 
   def pop
+    puts "TIMEOUT YO #{@timeout} #{@blocking}"
     @mutex.synchronize do
       if (@blocking)
         if (@timeout)
