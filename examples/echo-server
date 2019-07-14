@@ -61,6 +61,11 @@ worker = EchoWorker.new(
 
 puts "EchoWorker active on #{config.queue}"
 
+Signal.trap('INT') do |signal|
+  # Force quit immediately, don't wait on threads
+  Process.exit!(0)
+end
+
 Signal.trap('QUIT') do |signal|
   puts "\r Threads: #{Thread.list.length}"
   Thread.list.each do |thread|
