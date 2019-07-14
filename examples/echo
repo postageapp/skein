@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+
+# == Imports ================================================================
+
+require 'optparse'
+require 'securerandom'
+require 'bundler/setup'
+
+Bundler.require(:default)
+
+require_relative '../lib/skein'
+
+# == Support Classes ========================================================
+
+# == Main ===================================================================
+
+config = Skein::Config.new
+
+config.queue = 'skein-echo-test'
+
+options = {
+  repeat: false
+}
+
+program = OptionParser.new do |opts|
+  opts.on('-q', '--queue NAME', 'Queue to listen on') do |s|
+    config.queue = s
+  end
+  opts.on('-e', '--exchange NAME', 'Exchange to attach to') do |s|
+    config.exchange = s
+  end
+  opts.on('-u', '--username NAME', 'Authenticate with username') do |s|
+    config.username = s
+  end
+  opts.on('-p', '--password NAME', 'Authenticate with password') do |s|
+    config.password = s
+  end
+  opts.on('-H', '--host NAME', 'Connect to RabbitMQ host') do |s|
+    config.host = s
+  end
+  opts.on('-P', '--port NAME', 'Connect to RabbitMQ port') do |s|
+    config.port = s.to_i
+  end
+  opts.on('-r', '--repeat', 'Repeat echo') do |s|
+    options[:repeat] = true
+  end
+end
+
+program.parse!(ARGV)
+
+client = Skein::Client.new(
+  connection: Skein::RabbitMQ.connect(config)
+)
+
+rpc = client.rpc(config.exchange, routing_key: config.queue)
+threads = Hash.new { |h,k| h[k] = h.length }
+
+loop do
+  puts rpc.echo(SecureRandom.uuid)
+
+  if (options[:repeat])
+    sleep(1)
+  else
+    break
+  end
+end

@@ -7,11 +7,12 @@ class Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(connection: nil, context: nil, ident: nil)
+  def initialize(config: nil, connection: nil, context: nil, ident: nil)
+    @config = config
     @mutex = Mutex.new
     @shared_connection = !!connection
 
-    @connection = connection || Skein::RabbitMQ.connect
+    self.connect
     @channels = [ ]
 
     @context = context || Skein::Context.new
@@ -24,8 +25,42 @@ class Skein::Connected
     end
   end
 
-  def create_channel
-    channel = @connection.create_channel
+  def repeat_until_not_nil(delay: 1.0)
+    r = nil
+
+    loop do
+      r = yield
+
+      break if r
+
+      sleep(delay)
+    end
+
+    r
+  end
+
+  def connect
+    @connection ||=  repeat_until_not_nil do
+      Skein::RabbitMQ.connect(@config)
+    end
+  end
+
+  def reconnect
+    @connection = nil
+
+    self.connect
+  end
+
+  def create_channel(auto_retry: false)
+    channel = begin
+      @connection.create_channel
+    rescue RuntimeError
+      sleep(1)
+
+      self.reconnect
+
+      retry
+    end
 
     if (channel.respond_to?(:prefetch=))
       channel.prefetch = 1

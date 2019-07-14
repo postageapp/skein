@@ -27,7 +27,7 @@ class Skein::Client::Worker < Skein::Connected
     @durable = durable.nil? ? !!@queue_name.match(/\S/) : !!durable
 
     (concurrency || 1).times do |i|
-      with_channel_in_thread do |channel, meta|
+      with_channel_in_thread(name: 'worker-%d' % i) do |channel, meta|
         queue = channel.queue(
           @queue_name,
           durable: @durable,
@@ -175,9 +175,7 @@ protected
     }
   end
 
-  def with_channel_in_thread
-    thread_channel = self.create_channel
-
+  def with_channel_in_thread(recover: true, name: nil)
     meta = {
       metrics: metrics_tracker,
       state: state_tracker
@@ -187,15 +185,21 @@ protected
 
     meta[:thread] = Thread.new do
       Thread.abort_on_exception = true
+      Thread.current.name = name
 
       begin
-        yield(thread_channel, meta)
+        channel = self.create_channel
 
+        yield(channel, meta)
+
+        channel.close rescue nil
+
+        redo if (recover)
       ensure
         # NOTE: The `.close` call may fail for a variety of reasons, but the
         #       important thing here is an attempt is made, regardless of
         #       outcome.
-        thread_channel.close rescue nil
+        channel.close rescue nil
       end
     end
   end

@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+
+# == Imports ================================================================
+
+require 'optparse'
+require 'bundler/setup'
+
+Bundler.require(:default)
+
+require_relative '../lib/skein'
+
+# == Support Classes ========================================================
+
+class EchoWorker < Skein::Client::Worker
+  def echo(*args)
+    puts "Received: #{args.inspect}"
+
+    args
+  end
+end
+
+# == Main ===================================================================
+
+config = Skein::Config.new
+
+config.queue = 'skein-echo-test'
+config.concurrency = 1
+
+program = OptionParser.new do |opts|
+  opts.on('-q', '--queue NAME', 'Queue to listen on') do |s|
+    config.queue = s
+  end
+  opts.on('-e', '--exchange NAME', 'Exchange to attach to') do |s|
+    config.exchange = s
+  end
+  opts.on('-u', '--username NAME', 'Authenticate with username') do |s|
+    config.username = s
+  end
+  opts.on('-p', '--password NAME', 'Authenticate with password') do |s|
+    config.password = s
+  end
+  opts.on('-H', '--host NAME', 'Connect to RabbitMQ host') do |s|
+    config.host = s
+  end
+  opts.on('-P', '--port NAME', 'Connect to RabbitMQ port') do |s|
+    config.port = s.to_i
+  end
+  opts.on('-w', '--workers COUNT', 'Set workers count') do |s|
+    config.concurrency = s.to_i
+  end
+end
+
+program.parse!(ARGV)
+
+worker = EchoWorker.new(
+  config.queue,
+  exchange_name: config.exchange,
+  concurrency: config.concurrency,
+  connection: Skein::RabbitMQ.connect(config)
+)
+
+puts "EchoWorker active on #{config.queue}"
+
+Signal.trap('QUIT') do |signal|
+  puts "\r Threads: #{Thread.list.length}"
+  Thread.list.each do |thread|
+    puts '#%s %s' % [ thread.object_id, thread.name ]
+    puts thread.backtrace.join("\n")
+  end
+end
+
+worker.join
