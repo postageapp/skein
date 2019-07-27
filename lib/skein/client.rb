@@ -24,8 +24,8 @@ class Skein::Client < Skein::Connected
 
   # == Instance Methods =====================================================
 
-  def initialize(connection: nil, context: nil)
-    super(connection: connection, context: context)
+  def initialize(config: nil, connection: nil, context: nil)
+    super(config: config, connection: connection, context: context)
   end
 
   def rpc(exchange_name = nil, routing_key: nil, ident: nil, expiration: nil, persistent: nil, durable: nil, timeout: nil)
