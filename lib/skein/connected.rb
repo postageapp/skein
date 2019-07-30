@@ -8,9 +8,11 @@ class Skein::Connected
   # == Instance Methods =====================================================
 
   def initialize(config: nil, connection: nil, context: nil, ident: nil)
-    @config = config
     @mutex = Mutex.new
+
+    @config = config
     @shared_connection = !!connection
+    @connection = connection
 
     self.connect
     @channels = [ ]
@@ -40,7 +42,7 @@ class Skein::Connected
   end
 
   def connect
-    @connection ||=  repeat_until_not_nil do
+    @connection ||= repeat_until_not_nil do
       Skein::RabbitMQ.connect(@config)
     end
   end

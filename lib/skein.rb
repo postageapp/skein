@@ -7,6 +7,10 @@ module Skein
     VERSION
   end
 
+  def self.config=(config)
+    @config = config
+  end
+
   def self.config
     @config ||= Skein::Config.new
   end
