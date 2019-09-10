@@ -62,6 +62,9 @@ class Skein::Client::Worker < Skein::Connected
                 rescue RetryMessage
                   # Reject and requeue the message
                   channel.reject(delivery_tag, true)
+                rescue => e
+                  self.after_exception(e) rescue nil
+                  raise e
                 ensure
                   self.after_request
                 end
@@ -98,6 +101,13 @@ class Skein::Client::Worker < Skein::Connected
   # Define in derived classes. Will be called immediately after handling an
   # RPC call even if an error has occured.
   def after_request
+  end
+
+  # Declared in derived classes. Will be called immediately after an
+  # exception has occurred when processing a request. Any excepions generated
+  # in this method call are suppressed and ignored to avoid being caught
+  # in a loop.
+  def after_exception(e)
   end
 
   def close(delete_queue: false)
