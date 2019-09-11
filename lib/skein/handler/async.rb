@@ -4,7 +4,7 @@ class Skein::Handler::Async < Skein::Handler
   def delegate(*args)
     fiber = Fiber.new do
       @target.send(*args) do |*response|
-        fiber.yield(*response)
+        Fiber.yield(*response)
       end
     end
 
