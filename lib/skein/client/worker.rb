@@ -110,7 +110,19 @@ class Skein::Client::Worker < Skein::Connected
   def after_exception(e)
   end
 
+  # Declared in derived classes. Will be called immediately before the worker
+  # is closed down.
+  def before_close
+  end
+
+  # Declared in derived classes. Will be called immediately after the worker
+  # has been closed down.
+  def after_close
+  end
+
   def close(delete_queue: false)
+    self.before_close
+
     @operations.each do |meta|
       subscriber = meta[:subscriber]
 
@@ -135,6 +147,8 @@ class Skein::Client::Worker < Skein::Connected
     end
 
     super()
+
+    self.after_close
   end
 
   def join

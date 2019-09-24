@@ -11,7 +11,7 @@ class Skein::Connected
     @mutex = Mutex.new
 
     @config = config
-    @shared_connection = !!connection
+    @connection_shared = !!connection
     @connection = connection
 
     self.connect
@@ -56,6 +56,7 @@ class Skein::Connected
   def create_channel(auto_retry: false)
     channel = begin
       @connection.create_channel
+
     rescue RuntimeError
       sleep(1)
 
@@ -81,29 +82,35 @@ class Skein::Connected
 
   def close
     lock do
-      begin
-        @channels.each do |channel|
-          channel.open? and channel.close
-        end
+      @channels.each do |channel|
+        begin
+          channel.close
 
-      rescue => e
-        if (defined?(MarchHare))
-          case (e)
-          when MarchHare::ChannelLevelException, MarchHare::ChannelAlreadyClosed
-            # Ignored since we're finished with the channel anyway
+        rescue => e
+          if (defined?(MarchHare))
+            case (e)
+            when MarchHare::ChannelLevelException, MarchHare::ChannelAlreadyClosed
+              # Ignored since we're finished with the channel anyway
+            else
+              raise e
+            end
+          elsif (defined?(Bunny))
+            case (e)
+            when Bunny::ChannelAlreadyClosed
+              # Ignored since we're finished with the channel anyway
+            else
+              raise e
+            end
           else
             raise e
           end
-        else
-          raise e
         end
       end
 
-      @channel = nil
-      @channels.clear
+      @channels = [ ]
 
-      unless (@shared_connection)
-        @connection and @connection.close
+      unless (@connection_shared)
+        @connection&.close
         @connection = nil
       end
     end
