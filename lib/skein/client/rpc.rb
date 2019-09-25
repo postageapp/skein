@@ -39,6 +39,10 @@ class Skein::Client::RPC < Skein::Connected
 
     @consumer = Skein::Adapter.subscribe(@response_queue, block: false) do |payload, delivery_tag, reply_to|
       self.context.trap do
+        if (ENV['SKEIN_DEBUG_JSON'])
+          $stdout.puts(payload)
+        end
+
         response = JSON.load(payload)
 
         if (callback = @callback.delete(response['id']))
@@ -94,7 +98,7 @@ class Skein::Client::RPC < Skein::Connected
   end
 
   def close
-    @consumer and @consumer.cancel
+    @consumer&.cancel
     @consumer = nil
 
     super

@@ -55,3 +55,8 @@ a `Skein::Client::Worker` instance:
     end
 
     Responder.new('test_queue')
+
+## Debugging
+
+Setting the environment variable `SKEIN_DEBUG_JSON` will show raw JSON
+payloads received by both RPC workers and clients.

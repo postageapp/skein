@@ -22,60 +22,22 @@ class Skein::Client::Worker < Skein::Connected
 
     @exchange_name = exchange_name
     @queue_name = queue_name
-    concurrency &&= concurrency.to_i
-    @operations = [ ]
     @durable = durable.nil? ? !!@queue_name.match(/\S/) : !!durable
+    @operations = [ ]
+    @auto_delete = auto_delete
 
-    (concurrency || 1).times do |i|
+    concurrency &&= concurrency.to_i
+    concurrency ||= 1
+
+    concurrency.times do |i|
       with_channel_in_thread(name: 'worker-%d' % i) do |channel, meta|
-        queue = channel.queue(
-          @queue_name,
-          durable: @durable,
-          auto_delete: auto_delete
-        )
+        queue = self.establish_queue!
 
-        if (exchange_name and exchange_name.match(/\S/))
-          exchange = channel.direct(exchange_name, durable: true)
-
-          queue.bind(exchange, routing_key: routing_key || @queue_name)
-        end
-
-        meta[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
-          self.context.trap do
-            self.before_request
-
-            handler.handle(payload, meta[:metrics], meta[:state]) do |reply_json|
-              self.context.trap do
-                begin
-                  channel.acknowledge(delivery_tag, true)
-
-                  if (reply_to)
-                    channel.default_exchange.publish(
-                      reply_json,
-                      routing_key: reply_to,
-                      content_type: 'application/json'
-                    )
-                  end
-                rescue RejectMessage
-                  # Reject the message
-                  channel.reject(delivery_tag, false)
-                rescue RetryMessage
-                  # Reject and requeue the message
-                  channel.reject(delivery_tag, true)
-                rescue => e
-                  self.after_exception(e) rescue nil
-                  raise e
-                ensure
-                  self.after_request
-                end
-              end
-            end
-          end
-        end
+        meta[:subscriber] = self.establish_subscriber!(queue, meta)
       end
     end
 
-    self.after_initialize
+    self.after_initialize rescue nil
   end
 
   # Define in derived classes to implement any desired customization to be
@@ -199,6 +161,63 @@ protected
     }
   end
 
+  def establish_queue!
+    queue = channel.queue(
+      @queue_name,
+      durable: @durable,
+      auto_delete: @auto_delete
+    )
+
+    if (@exchange_name&.match(/\S/))
+      exchange = channel.direct(@exchange_name, durable: true)
+
+      queue.bind(exchange, routing_key: routing_key || @queue_name)
+    end
+
+    queue
+  end
+
+  def establish_subscriber!(queue, meta)
+    Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
+      self.context.trap do
+        self.before_request rescue nil
+
+        handler.handle(payload, meta[:metrics], meta[:state]) do |reply_json|
+          if (ENV['SKEIN_DEBUG_JSON'] and reply_to)
+            $stdout.puts('%s <- %s' % [ reply_to, reply_json ])
+          end
+
+          # Secondary (inner) trap required since some handlers are async
+          self.context.trap do
+            begin
+              channel.acknowledge(delivery_tag, true)
+
+              return unless (reply_to)
+
+              channel.default_exchange.publish(
+                reply_json,
+                routing_key: reply_to,
+                content_type: 'application/json'
+              )
+
+            rescue RejectMessage
+              # Reject the message
+              channel.reject(delivery_tag, false)
+            rescue RetryMessage
+              # Reject and requeue the message
+              channel.reject(delivery_tag, true)
+            rescue => e
+              self.after_exception(e) rescue nil
+              raise e
+            ensure
+              self.after_request rescue nil
+            end
+          end
+        end
+      end
+    end
+  end
+
   def with_channel_in_thread(recover: true, name: nil)
     meta = {
       metrics: metrics_tracker,
@@ -219,11 +238,12 @@ protected
         channel.close rescue nil
 
         redo if (recover)
+
       ensure
         # NOTE: The `.close` call may fail for a variety of reasons, but the
         #       important thing here is an attempt is made, regardless of
         #       outcome.
-        channel.close rescue nil
+        channel&.close rescue nil
       end
     end
   end

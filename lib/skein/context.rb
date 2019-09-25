@@ -33,11 +33,12 @@ class Skein::Context
   end
 
   def exception!(*args)
-    @reporter and @reporter.exception!(*args)
+    @reporter&.exception!(*args)
   end
 
   def trap
     yield
+
   rescue SystemExit
     raise
   rescue Object => e
