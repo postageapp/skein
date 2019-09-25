@@ -179,6 +179,10 @@ protected
     queue = self.establish_queue!(channel)
 
     meta[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
+      if (ENV['SKEIN_DEBUG_JSON'] and reply_to)
+        $stdout.puts('%s -> %s' % [ reply_to, payload ])
+      end
+
       self.context.trap do
         self.before_request rescue nil
 
