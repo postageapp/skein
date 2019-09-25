@@ -52,17 +52,17 @@ class Skein::Client < Skein::Connected
     )
   end
 
-  def publisher(queue_name)
+  def publisher(exchange_name)
     Skein::Client::Publisher.new(
-      queue_name,
+      exchange_name,
       connection: self.connection,
       context: self.context
     )
   end
 
-  def subscriber(queue_name, routing_key = nil)
+  def subscriber(exchange_name, routing_key = nil)
     Skein::Client::Subscriber.new(
-      queue_name,
+      exchange_name,
       routing_key,
       connection: self.connection,
       context: self.context

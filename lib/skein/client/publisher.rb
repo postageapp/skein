@@ -1,10 +1,10 @@
 class Skein::Client::Publisher < Skein::Connected
   # == Instance Methods =====================================================
 
-  def initialize(queue_name, connection: nil, context: nil)
+  def initialize(exchange_name, connection: nil, context: nil)
     super(connection: connection, context: context)
 
-    @queue = self.channel.topic(queue_name)
+    @queue = self.channel.topic(exchange_name)
   end
 
   def publish!(message, routing_key = nil)
