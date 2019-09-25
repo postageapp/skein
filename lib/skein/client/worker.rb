@@ -31,9 +31,7 @@ class Skein::Client::Worker < Skein::Connected
 
     concurrency.times do |i|
       with_channel_in_thread(name: 'worker-%d' % i) do |channel, meta|
-        queue = self.establish_queue!
-
-        meta[:subscriber] = self.establish_subscriber!(queue, meta)
+        self.establish_subscriber!(channel, meta)
       end
     end
 
@@ -161,7 +159,7 @@ protected
     }
   end
 
-  def establish_queue!
+  def establish_queue!(channel)
     queue = channel.queue(
       @queue_name,
       durable: @durable,
@@ -177,8 +175,10 @@ protected
     queue
   end
 
-  def establish_subscriber!(queue, meta)
-    Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
+  def establish_subscriber!(channel, meta)
+    queue = self.establish_queue!(channel)
+
+    meta[:subscriber] = Skein::Adapter.subscribe(queue) do |payload, delivery_tag, reply_to|
       self.context.trap do
         self.before_request rescue nil
 
@@ -231,7 +231,7 @@ protected
       Thread.current.name = name
 
       begin
-        channel = self.create_channel
+        channel = meta[:channel] = self.create_channel
 
         yield(channel, meta)
 
