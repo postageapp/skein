@@ -22,6 +22,7 @@ class Skein::Client::Worker < Skein::Connected
 
     @exchange_name = exchange_name
     @queue_name = queue_name
+    @routing_key = routing_key
     @durable = durable.nil? ? !!@queue_name.match(/\S/) : !!durable
     @operations = [ ]
     @auto_delete = auto_delete
@@ -169,7 +170,7 @@ protected
     if (@exchange_name&.match(/\S/))
       exchange = channel.direct(@exchange_name, durable: true)
 
-      queue.bind(exchange, routing_key: routing_key || @queue_name)
+      queue.bind(exchange, routing_key: @routing_key || @queue_name)
     end
 
     queue
