@@ -51,7 +51,7 @@ class Skein::Client::RPC < Skein::Connected
               case (response['error'] and response['error']['code'])
               when -32601
                 NoMethodError.new(
-                  "%s from %s RPC call" % [
+                  "%s from `%s' RPC call" % [
                     response.dig('error', 'message'),
                     response.dig('error', 'data', 'method')
                   ]
