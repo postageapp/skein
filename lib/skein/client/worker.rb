@@ -188,14 +188,14 @@ protected
         self.before_request rescue nil
 
         handler.handle(payload, meta[:metrics], meta[:state]) do |reply_json|
-          # NOTE: begin...end necessary for rescue in Ruby versions below 2.4
-          begin
-            if (ENV['SKEIN_DEBUG_JSON'] and reply_to)
-              $stdout.puts('%s <- %s' % [ reply_to, reply_json ])
-            end
+          if (ENV['SKEIN_DEBUG_JSON'] and reply_to)
+            $stdout.puts('%s <- %s' % [ reply_to, reply_json ])
+          end
 
-            # Secondary (inner) trap required since some handlers are async
-            self.context.trap do
+          # Secondary (inner) trap required since some handlers are async
+          self.context.trap do
+            # NOTE: begin...end necessary for rescue in Ruby versions below 2.4
+            begin
               channel.acknowledge(delivery_tag, true)
 
               return unless (reply_to)
