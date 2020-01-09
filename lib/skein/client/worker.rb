@@ -194,29 +194,27 @@ protected
 
           # Secondary (inner) trap required since some handlers are async
           self.context.trap do
-            begin
-              channel.acknowledge(delivery_tag, true)
+            channel.acknowledge(delivery_tag, true)
 
-              return unless (reply_to)
+            return unless (reply_to)
 
-              channel.default_exchange.publish(
-                reply_json,
-                routing_key: reply_to,
-                content_type: 'application/json'
-              )
+            channel.default_exchange.publish(
+              reply_json,
+              routing_key: reply_to,
+              content_type: 'application/json'
+            )
 
-            rescue RejectMessage
-              # Reject the message
-              channel.reject(delivery_tag, false)
-            rescue RetryMessage
-              # Reject and requeue the message
-              channel.reject(delivery_tag, true)
-            rescue => e
-              self.after_exception(e) rescue nil
-              raise e
-            ensure
-              self.after_request rescue nil
-            end
+          rescue RejectMessage
+            # Reject the message
+            channel.reject(delivery_tag, false)
+          rescue RetryMessage
+            # Reject and requeue the message
+            channel.reject(delivery_tag, true)
+          rescue => e
+            self.after_exception(e) rescue nil
+            raise e
+          ensure
+            self.after_request rescue nil
           end
         end
       end

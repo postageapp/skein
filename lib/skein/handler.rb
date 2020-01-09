@@ -169,7 +169,7 @@ class Skein::Handler
       yield(json_rpc(
         error: {
           code: -32601,
-          message: 'Method not found',
+          message: e.to_s,
           data: {
             method: request['method']
           }
