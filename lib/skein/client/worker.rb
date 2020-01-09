@@ -188,33 +188,36 @@ protected
         self.before_request rescue nil
 
         handler.handle(payload, meta[:metrics], meta[:state]) do |reply_json|
-          if (ENV['SKEIN_DEBUG_JSON'] and reply_to)
-            $stdout.puts('%s <- %s' % [ reply_to, reply_json ])
-          end
+          # NOTE: begin...end necessary for rescue in Ruby versions below 2.4
+          begin
+            if (ENV['SKEIN_DEBUG_JSON'] and reply_to)
+              $stdout.puts('%s <- %s' % [ reply_to, reply_json ])
+            end
 
-          # Secondary (inner) trap required since some handlers are async
-          self.context.trap do
-            channel.acknowledge(delivery_tag, true)
+            # Secondary (inner) trap required since some handlers are async
+            self.context.trap do
+              channel.acknowledge(delivery_tag, true)
 
-            return unless (reply_to)
+              return unless (reply_to)
 
-            channel.default_exchange.publish(
-              reply_json,
-              routing_key: reply_to,
-              content_type: 'application/json'
-            )
+              channel.default_exchange.publish(
+                reply_json,
+                routing_key: reply_to,
+                content_type: 'application/json'
+              )
 
-          rescue RejectMessage
-            # Reject the message
-            channel.reject(delivery_tag, false)
-          rescue RetryMessage
-            # Reject and requeue the message
-            channel.reject(delivery_tag, true)
-          rescue => e
-            self.after_exception(e) rescue nil
-            raise e
-          ensure
-            self.after_request rescue nil
+            rescue RejectMessage
+              # Reject the message
+              channel.reject(delivery_tag, false)
+            rescue RetryMessage
+              # Reject and requeue the message
+              channel.reject(delivery_tag, true)
+            rescue => e
+              self.after_exception(e) rescue nil
+              raise e
+            ensure
+              self.after_request rescue nil
+            end
           end
         end
       end
