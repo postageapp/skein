@@ -198,13 +198,13 @@ protected
             begin
               channel.acknowledge(delivery_tag, true)
 
-              return unless (reply_to)
-
-              channel.default_exchange.publish(
-                reply_json,
-                routing_key: reply_to,
-                content_type: 'application/json'
-              )
+              if (reply_to)
+                channel.default_exchange.publish(
+                  reply_json,
+                  routing_key: reply_to,
+                  content_type: 'application/json'
+                )
+              end
 
             rescue RejectMessage
               # Reject the message
