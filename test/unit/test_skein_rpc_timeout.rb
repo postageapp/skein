@@ -2,7 +2,7 @@ require_relative '../helper'
 
 class TestSkeinRpcTimeout< Test::Unit::TestCase
   def test_low_timeout
-    assert_raise ThreadError do
+    assert_raise Skein::TimeoutException do
       client = Skein::Client.new
 
       result = client.rpc('', routing_key: "test", timeout: 0.1).test
@@ -10,7 +10,7 @@ class TestSkeinRpcTimeout< Test::Unit::TestCase
   end
 
   def test_short_timeout
-    assert_raise ThreadError do
+    assert_raise Skein::TimeoutException do
       client = Skein::Client.new
 
       result = client.rpc('', routing_key: "test", timeout: 2).test

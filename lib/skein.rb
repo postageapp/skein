@@ -1,7 +1,19 @@
 require 'json'
 
 module Skein
-  VERSION = File.read(File.expand_path('../VERSION', File.dirname(__FILE__))).chomp.freeze
+  # == Constants ============================================================
+
+  VERSION = File.read(File.expand_path('../VERSION', __dir__)).chomp.freeze
+
+  # == Exceptions ===========================================================
+
+  class Exception < ::StandardError
+  end
+
+  class TimeoutException < Exception
+  end
+
+  # == Module Methods =======================================================
 
   def self.version
     VERSION

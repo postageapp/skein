@@ -34,7 +34,7 @@ class Skein::TimeoutQueue
       end
 
       if (@response.empty?)
-        raise ThreadError, 'Queue Empty: Time Out'
+        raise Skein::TimeoutException, 'Queue Empty: Time Out'
       end
 
       @response.shift
