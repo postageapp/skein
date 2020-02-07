@@ -4,6 +4,7 @@ class Skein::Client::Worker < Skein::Connected
   # == Properties ===========================================================
 
   attr_reader :operations
+  attr_reader :queue_name
 
   # == Exceptions ===========================================================
 
@@ -21,7 +22,7 @@ class Skein::Client::Worker < Skein::Connected
     super(connection: connection, context: context, ident: ident)
 
     @exchange_name = exchange_name
-    @queue_name = queue_name
+    @queue_name = queue_name.dup.freeze
     @routing_key = routing_key
     @durable = durable.nil? ? !!@queue_name.match(/\S/) : !!durable
     @operations = [ ]
