@@ -43,7 +43,7 @@ class Skein::Client::Subscriber < Skein::Connected
         @subscribe_queue.delete
       rescue => e
         case (e.class.to_s)
-        when 'MarchHare::ChannelAlreadyClosed'
+        when 'Bunny::ChannelAlreadyClosed', 'MarchHare::ChannelAlreadyClosed'
           # Tried to delete, but this has already been shut down
         else
           raise e

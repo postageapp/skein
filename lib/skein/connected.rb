@@ -11,7 +11,7 @@ class Skein::Connected
     @mutex = Mutex.new
 
     @config = config
-    @connection_shared = !!connection
+    @connection_shared = !connection
     @connection = connection
 
     self.connect
@@ -19,6 +19,10 @@ class Skein::Connected
 
     @context = context || Skein::Context.new
     @ident = ident || @context.ident(self)
+  end
+
+  def connection_shared?
+    @connection_shared
   end
 
   def lock
@@ -43,6 +47,7 @@ class Skein::Connected
 
   def connect
     @connection ||= repeat_until_not_nil do
+      @connection_shared = false
       Skein::RabbitMQ.connect(@config)
     end
   end

@@ -9,9 +9,12 @@ class TestSkeinClient < Test::Unit::TestCase
         client = Skein::Client.new
 
         assert client.context
+        assert_false client.connection_shared?
+
+        client&.close
 
       ensure
-        client and client.close
+        client&.close
       end
     end
   end
