@@ -52,9 +52,11 @@ class Skein::Client < Skein::Connected
     )
   end
 
-  def publisher(exchange_name)
+  def publisher(exchange_name, type: nil, durable: nil)
     Skein::Client::Publisher.new(
       exchange_name,
+      type: type,
+      durable: durable,
       connection: self.connection,
       context: self.context
     )
