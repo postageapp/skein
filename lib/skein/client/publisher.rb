@@ -4,13 +4,7 @@ class Skein::Client::Publisher < Skein::Connected
   def initialize(exchange_name, type: nil, durable: nil, connection: nil, context: nil)
     super(connection: connection, context: context)
 
-    @queue =
-      case (type)
-      when 'direct', :direct
-        self.channel.direct(exchange_name, durable: durable)
-      else
-        self.channel.topic(exchange_name, durable: durable)
-      end
+    @queue = self.channel.send(type || :topic, exchange_name, durable: durable)
   end
 
   def publish!(message, routing_key = nil)
