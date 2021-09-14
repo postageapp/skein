@@ -88,7 +88,7 @@ class Skein::Config < OpenStruct
 
     if (config_path and File.exist?(config_path))
       super(DEFAULTS.merge(
-        YAML.load_file(config_path, aliases: true)[self.class.env] || { }
+        YAML.safe_load(File.open(config_path), aliases: true)[self.class.env] || { }
       ))
     else
       super(DEFAULTS)

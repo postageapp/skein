@@ -1,0 +1,8 @@
+/.bundle
+/.vscode
+/.git
+
+.DS_Store
+
+tmp/*
+*.gem
