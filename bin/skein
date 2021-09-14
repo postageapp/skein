@@ -128,7 +128,7 @@ when 'subscribe'
   end
 when 'echo'
   rescue_safely(options) do
-    results = TimeoutQueue.new
+    results = Skein::TimeoutQueue.new
 
     start = Time.now
 
