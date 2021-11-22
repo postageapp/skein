@@ -92,9 +92,11 @@ class Skein::Client::RPC < Skein::Connected
   def reroute!(routing_key)
     routing_key, @routing_key = @routing_key, routing_key
 
-    yield if (block_given?)
-
-    @routing_key = routing_key
+    begin
+      yield if (block_given?)
+    ensure
+      @routing_key = routing_key
+    end
   end
 
   def close
