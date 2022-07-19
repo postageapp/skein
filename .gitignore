@@ -6,3 +6,5 @@
 
 *.gem
 
+# Used for development only
+Gemfile.lock
