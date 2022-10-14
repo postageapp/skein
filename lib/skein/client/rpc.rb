@@ -4,7 +4,7 @@ require 'fiber'
 class Skein::Client::RPC < Skein::Connected
   # == Exceptions ===========================================================
 
-  class RPCException < Exception
+  class RPCException < Skein::Exception
   end
 
   # == Constants ============================================================

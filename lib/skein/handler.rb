@@ -113,7 +113,7 @@ class Skein::Handler
         state[:method] = nil
 
         case (result)
-        when Exception
+        when Skein::Exception
           metrics[:failed] += 1
           metrics[:errors][:exception] += 1
 
@@ -187,7 +187,7 @@ class Skein::Handler
 
       yield(json_rpc(
         error: {
-          code: -32063, 
+          code: -32063,
           message: '[%s] %s' % [ e.class, e ]
         },
         id: request['id']

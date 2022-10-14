@@ -10,7 +10,7 @@ module Skein
   class Exception < ::StandardError
   end
 
-  class TimeoutException < Exception
+  class TimeoutException < Skein::Exception
   end
 
   # == Module Methods =======================================================

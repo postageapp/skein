@@ -8,10 +8,10 @@ class Skein::Client::Worker < Skein::Connected
 
   # == Exceptions ===========================================================
 
-  class RejectMessage < Exception
+  class RejectMessage < Skein::Exception
   end
 
-  class RetryMessage < Exception
+  class RetryMessage < Skein::Exception
   end
 
   # == Class Methods ========================================================
